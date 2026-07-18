@@ -216,13 +216,26 @@
     "qgk53jhm": {
       "unidadesPaquete": 3,
       "precioPaquete": 1000,
-      "ventasMes": "90"
+      "ventasMes": "0"
     },
     "6i1pqliw": {
       "unidadesPaquete": 1,
       "precioPaquete": "500",
-      "ventasMes": "38"
+      "ventasMes": "0"
     }
   },
-  "registroDiario": {}
+  "registroDiario": {
+    "2026-07-18": {
+      "qgk53jhm": {
+        "fabricado": 92,
+        "vendido": 0,
+        "cortesia": 0
+      },
+      "6i1pqliw": {
+        "fabricado": 38,
+        "vendido": 0,
+        "cortesia": 0
+      }
+    }
+  }
 }
