@@ -1,0 +1,228 @@
+{
+  "ingredientes": [
+    {
+      "id": "nfqecha8",
+      "nombre": "Azucar",
+      "cantidad": 1,
+      "unidad": "kg",
+      "precio": "1200"
+    },
+    {
+      "id": "929onaah",
+      "nombre": "Harina",
+      "cantidad": "25",
+      "unidad": "kg",
+      "precio": "20140"
+    },
+    {
+      "id": "wt3ezpv6",
+      "nombre": "Levadura",
+      "cantidad": 500,
+      "unidad": "g",
+      "precio": "2490"
+    },
+    {
+      "id": "4p2py1ge",
+      "nombre": "Huevo",
+      "cantidad": 1,
+      "unidad": "ea",
+      "precio": "199"
+    },
+    {
+      "id": "d3qr73i6",
+      "nombre": "Vainilla",
+      "cantidad": "1.5",
+      "unidad": "l",
+      "precio": "1500"
+    },
+    {
+      "id": "6nkpn15c",
+      "nombre": "Limon",
+      "cantidad": 500,
+      "unidad": "ml",
+      "precio": 2990
+    },
+    {
+      "id": "95oz6cyi",
+      "nombre": "Canela",
+      "cantidad": 500,
+      "unidad": "ml",
+      "precio": 1500
+    },
+    {
+      "id": "cf18af3r",
+      "nombre": "Margarina",
+      "cantidad": "1",
+      "unidad": "kg",
+      "precio": "2800"
+    },
+    {
+      "id": "dsr822lr",
+      "nombre": "Merengue",
+      "cantidad": 600,
+      "unidad": "g",
+      "precio": "4000"
+    },
+    {
+      "id": "axwel3ok",
+      "nombre": "Manjar",
+      "cantidad": 6,
+      "unidad": "kg",
+      "precio": "22000"
+    },
+    {
+      "id": "pwwviz7f",
+      "nombre": "Pastelera",
+      "cantidad": "400",
+      "unidad": "g",
+      "precio": "1800"
+    },
+    {
+      "id": "hjcwbwsr",
+      "nombre": "Azucar flor",
+      "cantidad": 1,
+      "unidad": "kg",
+      "precio": "2000"
+    },
+    {
+      "id": "ghuzm2sl",
+      "nombre": "Aceite",
+      "cantidad": 900,
+      "unidad": "ml",
+      "precio": "1400"
+    },
+    {
+      "id": "6e18qgl6",
+      "nombre": "Bandeja",
+      "cantidad": "100",
+      "unidad": "ea",
+      "precio": "9900"
+    }
+  ],
+  "recetas": [
+    {
+      "id": "qgk53jhm",
+      "nombre": "Pajaritos",
+      "unidadesPorTanda": "45",
+      "items": [
+        {
+          "id": "qxb8ah81",
+          "ingredienteId": "nfqecha8",
+          "cantidadUsada": "220"
+        },
+        {
+          "id": "xvund18y",
+          "ingredienteId": "929onaah",
+          "cantidadUsada": "1000"
+        },
+        {
+          "id": "bqayzoms",
+          "ingredienteId": "wt3ezpv6",
+          "cantidadUsada": "40"
+        },
+        {
+          "id": "zklh306r",
+          "ingredienteId": "4p2py1ge",
+          "cantidadUsada": 1
+        },
+        {
+          "id": "uu7dalcu",
+          "ingredienteId": "d3qr73i6",
+          "cantidadUsada": "100"
+        },
+        {
+          "id": "zmh0s8hd",
+          "ingredienteId": "6nkpn15c",
+          "cantidadUsada": "30"
+        },
+        {
+          "id": "nmgl8mxu",
+          "ingredienteId": "95oz6cyi",
+          "cantidadUsada": "10"
+        },
+        {
+          "id": "i672p0ze",
+          "ingredienteId": "cf18af3r",
+          "cantidadUsada": "100"
+        },
+        {
+          "id": "dc90xnm2",
+          "ingredienteId": "dsr822lr",
+          "cantidadUsada": "300"
+        },
+        {
+          "id": "1xhy1jur",
+          "ingredienteId": "6e18qgl6",
+          "cantidadUsada": "6"
+        }
+      ]
+    },
+    {
+      "id": "6i1pqliw",
+      "nombre": "Berlines",
+      "unidadesPorTanda": "19",
+      "items": [
+        {
+          "id": "6g3mjotz",
+          "ingredienteId": "nfqecha8",
+          "cantidadUsada": "220"
+        },
+        {
+          "id": "cz9maj7l",
+          "ingredienteId": "929onaah",
+          "cantidadUsada": "1000"
+        },
+        {
+          "id": "jkpa8bmo",
+          "ingredienteId": "wt3ezpv6",
+          "cantidadUsada": "40"
+        },
+        {
+          "id": "p0nzvd3v",
+          "ingredienteId": "4p2py1ge",
+          "cantidadUsada": "1"
+        },
+        {
+          "id": "ugf3ox9d",
+          "ingredienteId": "d3qr73i6",
+          "cantidadUsada": "70"
+        },
+        {
+          "id": "vsturwy2",
+          "ingredienteId": "6nkpn15c",
+          "cantidadUsada": "40"
+        },
+        {
+          "id": "5vwp25lh",
+          "ingredienteId": "cf18af3r",
+          "cantidadUsada": "100"
+        },
+        {
+          "id": "ro1isyxv",
+          "ingredienteId": "axwel3ok",
+          "cantidadUsada": "600"
+        },
+        {
+          "id": "2cbo4blr",
+          "ingredienteId": "hjcwbwsr",
+          "cantidadUsada": "100"
+        }
+      ]
+    }
+  ],
+  "gastos": [],
+  "produccionMensual": "0",
+  "ventas": {
+    "qgk53jhm": {
+      "unidadesPaquete": 3,
+      "precioPaquete": 1000,
+      "ventasMes": "90"
+    },
+    "6i1pqliw": {
+      "unidadesPaquete": 1,
+      "precioPaquete": "500",
+      "ventasMes": "38"
+    }
+  },
+  "registroDiario": {}
+}
