@@ -157,9 +157,9 @@
   "produccionMensual": "0",
   "ventas": {
     "00dn8rjf": {
-      "unidadesPaquete": 1,
-      "precioPaquete": 0,
-      "ventasMes": 0
+      "unidadesPaquete": "3",
+      "precioPaquete": "1000",
+      "ventasMes": "87"
     }
   },
   "registroDiario": {
