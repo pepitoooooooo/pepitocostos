@@ -694,7 +694,7 @@
     <button data-tab="ingredientes"><span class="ic">🍬</span>Ingredientes</button>
     <button data-tab="recetas"><span class="ic">🧁</span>Recetas</button>
     <button data-tab="gastos"><span class="ic">💡</span>Gastos fijos</button>
-    <button data-tab="registro"><span class="ic">🗓️</span>Diario</button>
+    <button data-tab="registro"><span class="ic">🗓️</span>Registro</button>
     <button data-tab="resumen"><span class="ic">📊</span>Resumen</button>
   </nav>
 </div>
@@ -1470,7 +1470,7 @@ function renderResumen(){
   const { totales: tp, label: periodoLabelResumen } = getPeriodoTotales(registroFecha);
   const ventasRealesHtml = `
     <div class="section-title" style="margin-top:0;">📈 Ventas registradas</div>
-    <div class="section-hint">Esto viene de lo que has ido anotando en la pestaña Diario, no de la estimación de abajo.</div>
+    <div class="section-hint">Esto viene de lo que has ido anotando en la pestaña Registro, no de la estimación de abajo.</div>
     <div class="periodo-toggle">
       <button class="periodo-btn ${resumenPeriodo==='dia'?'active':''}" data-action="set-periodo" data-periodo="dia">Día</button>
       <button class="periodo-btn ${resumenPeriodo==='semana'?'active':''}" data-action="set-periodo" data-periodo="semana">Semana</button>
