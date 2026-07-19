@@ -560,8 +560,8 @@
   .kv .v.neg{ color: var(--cherry); }
   .pos{ color: var(--mint-dark); }
   .neg{ color: var(--cherry); }
-  .pos-dark{ color: #f4d99a; }
-  .neg-dark{ color: #ffb4a8; }
+  .pos-dark{ color: #f4d99a !important; }
+  .neg-dark{ color: #ffb4a8 !important; }
   .empty{
     text-align:center;
     color: var(--ink-soft);
@@ -819,6 +819,9 @@ let calendarOpen = false;
 let ventaFormOpen = false;
 let ventaFormRecetaId = null;
 let ventaFormConfirmMsg = null;
+// 'agregar': lo que escribas se SUMA a lo ya registrado ese día (uso normal, varias veces al día).
+// 'editar': lo que escribas REEMPLAZA el total del día (para corregir un error).
+let ventaFormMode = 'agregar';
 let saveTimer = null;
 
 // Usa el almacenamiento de Claude si está disponible (vista previa del artefacto);
@@ -1346,6 +1349,11 @@ function renderRegistro(){
   }
   const dulceOptions = state.recetas.map(r => `<option value="${r.id}" ${r.id===ventaFormRecetaId?'selected':''}>${escapeAttr(r.nombre)}</option>`).join('');
   const entryActual = getRecetaEntradaDia(fecha, ventaFormRecetaId);
+  // En modo 'agregar' los campos parten en 0 (lo que se sume ahora); en 'editar' muestran
+  // el acumulado del día para corregirlo directamente.
+  const camposForm = ventaFormMode === 'editar'
+    ? entryActual
+    : { fabricado: 0, vendido: 0, cortesia: 0 };
 
   const registradosHoy = state.recetas
     .map(r => ({ receta: r, entry: getRecetaEntradaDia(fecha, r.id) }))
@@ -1372,23 +1380,36 @@ function renderRegistro(){
     </button>
     ${ventaFormOpen ? `
     <div class="card venta-form-card" style="margin-bottom:18px;">
-      <div class="row" style="margin-bottom:10px;">
+      <div class="row" style="margin-bottom:10px; align-items:center;">
         <label style="width:64px;">Dulce</label>
         <select id="venta-form-dulce">${dulceOptions}</select>
       </div>
+      ${ventaFormMode === 'editar' ? `
+        <div class="section-hint" style="margin:0 0 10px;">
+          Estás corrigiendo el total acumulado de hoy para este dulce. Lo que escribas
+          <b>reemplaza</b> el número actual (no se suma).
+        </div>
+      ` : `
+        <div class="section-hint" style="margin:0 0 10px;">
+          Escribe lo que fabricaste/vendiste/regalaste <b>ahora</b>. Se <b>sumará</b> a lo que
+          ya llevabas registrado hoy para este dulce.
+        </div>
+      `}
       <div class="row" style="margin-bottom:6px;">
         <label style="width:64px;">Fabricado</label>
-        <input type="number" min="0" step="any" id="venta-form-fabricado" value="${entryActual.fabricado}">
+        <input type="number" min="0" step="any" id="venta-form-fabricado" value="${camposForm.fabricado}">
       </div>
       <div class="row" style="margin-bottom:6px;">
         <label style="width:64px;">Vendido</label>
-        <input type="number" min="0" step="any" id="venta-form-vendido" value="${entryActual.vendido}">
+        <input type="number" min="0" step="any" id="venta-form-vendido" value="${camposForm.vendido}">
       </div>
       <div class="row" style="margin-bottom:0;">
         <label style="width:64px;">Cortesía</label>
-        <input type="number" min="0" step="any" id="venta-form-cortesia" value="${entryActual.cortesia}">
+        <input type="number" min="0" step="any" id="venta-form-cortesia" value="${camposForm.cortesia}">
       </div>
-      <button class="btn-venta" data-action="form-confirmar-venta" style="width:100%; margin-top:14px; padding:11px 0;">Confirmar</button>
+      <button class="btn-venta" data-action="form-confirmar-venta" style="width:100%; margin-top:14px; padding:11px 0;">
+        ${ventaFormMode === 'editar' ? 'Guardar corrección' : 'Sumar al día'}
+      </button>
     </div>
     ` : ''}
     ${registradosHoyHtml}
@@ -1406,9 +1427,9 @@ function renderRegistro(){
     </div>
     <div class="card" style="background:var(--ink); color:#fff; margin-top:8px;">
       <div class="totals-strip" style="border:none; padding:2px 0 8px;"><span id="periodo-label" style="font-style:italic; color:#d8c4ab;">${periodoLabel}</span><span></span></div>
-      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Producido / vendido</span><b id="dia-fabvend">${t.totFabricado} / ${t.totVendido} un</b></div>
-      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Ingresos</span><b id="dia-ingreso">${money(t.ingreso)}</b></div>
-      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Costo de producción</span><b id="dia-costo">${money(t.costoProduccion)}</b></div>
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Producido / vendido</span><b id="dia-fabvend" style="color:#fff;">${t.totFabricado} / ${t.totVendido} un</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Ingresos</span><b id="dia-ingreso" style="color:#fff;">${money(t.ingreso)}</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Costo de producción</span><b id="dia-costo" style="color:#fff;">${money(t.costoProduccion)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Cortesías entregadas</span><b id="dia-cortesias" style="color:#f4d99a;">${t.totCortesia} un · -${money(t.costoCortesias)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Pérdida por no venta</span><b id="dia-perdida" style="color:#f0a8a8;">${money(t.perdidaDinero)}</b></div>
       <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ganancia neta</span><b id="dia-ganancia" class="${t.gananciaNeta>=0?'pos-dark':'neg-dark'}" style="font-size:16px;">${money(t.gananciaNeta)}</b></div>
@@ -1433,8 +1454,8 @@ function renderResumen(){
     </div>
     <div class="card" style="background:var(--ink); color:#fff; margin-top:8px; margin-bottom:22px;">
       <div class="totals-strip" style="border:none; padding:2px 0 8px;"><span style="font-style:italic; color:#d8c4ab;">${periodoLabelResumen}</span><span></span></div>
-      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Vendido</span><b>${tp.totVendido} un</b></div>
-      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Ingresos</span><b>${money(tp.ingreso)}</b></div>
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Vendido</span><b style="color:#fff;">${tp.totVendido} un</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Ingresos</span><b style="color:#fff;">${money(tp.ingreso)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Cortesías</span><b style="color:#f4d99a;">${tp.totCortesia} un · -${money(tp.costoCortesias)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Pérdida por no venta</span><b style="color:#f0a8a8;">${money(tp.perdidaDinero)}</b></div>
       <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ganancia neta</span><b class="${tp.gananciaNeta>=0?'pos-dark':'neg-dark'}" style="font-size:16px;">${money(tp.gananciaNeta)}</b></div>
@@ -1477,7 +1498,7 @@ function renderResumen(){
     ${cards}
     <div class="card" style="background:var(--ink); color:#fff;">
       <div class="totals-strip" style="border:none; padding:0;">
-        <span>Ganancia mensual total (estimada)</span><b style="font-size:16px;">${money(totalMensual)}</b>
+        <span>Ganancia mensual total (estimada)</span><b style="font-size:16px; color:#fff;">${money(totalMensual)}</b>
       </div>
     </div>
   `;
@@ -1807,8 +1828,13 @@ function onAction(e){
     ventaFormConfirmMsg = null;
   }
   else if(action === 'delete-dia'){
-    delete state.registroDiario[btn.dataset.fecha];
-    if(registroFecha === btn.dataset.fecha) registroFecha = todayStr();
+    const fecha = btn.dataset.fecha;
+    if(confirm(`¿Eliminar toda la venta registrada del ${formatFechaCorta(fecha)}? Esto borra fabricado, vendido y cortesías de todos los dulces ese día.`)){
+      delete state.registroDiario[fecha];
+      if(registroFecha === fecha) registroFecha = todayStr();
+    } else {
+      return;
+    }
   }
   else if(action === 'toggle-calendario'){
     calendarOpen = !calendarOpen;
@@ -1835,12 +1861,14 @@ function onAction(e){
   else if(action === 'toggle-venta-form'){
     ventaFormOpen = !ventaFormOpen;
     ventaFormConfirmMsg = null;
+    if(ventaFormOpen) ventaFormMode = 'agregar'; // el botón "+ Ingresar venta del día" siempre suma
     render();
     return;
   }
   else if(action === 'editar-registro-dulce'){
     ventaFormRecetaId = btn.dataset.recetaId;
     ventaFormOpen = true;
+    ventaFormMode = 'editar'; // tocar un registro ya existente siempre corrige/reemplaza
     ventaFormConfirmMsg = null;
     render();
     return;
@@ -1867,21 +1895,36 @@ function onAction(e){
     if(!recetaId){
       alert('Elige qué dulce vas a registrar.');
     } else {
-      let fabricado = Number(document.getElementById('venta-form-fabricado').value) || 0;
-      let vendido = Number(document.getElementById('venta-form-vendido').value) || 0;
-      let cortesia = Number(document.getElementById('venta-form-cortesia').value) || 0;
+      let fabricadoInput = Number(document.getElementById('venta-form-fabricado').value) || 0;
+      let vendidoInput = Number(document.getElementById('venta-form-vendido').value) || 0;
+      let cortesiaInput = Number(document.getElementById('venta-form-cortesia').value) || 0;
+      const fecha = registroFecha;
+      if(!state.registroDiario[fecha]) state.registroDiario[fecha] = {};
+      const existente = getRecetaEntradaDia(fecha, recetaId);
+
+      let fabricado, vendido, cortesia;
+      if(ventaFormMode === 'editar'){
+        // Modo corrección: lo escrito reemplaza el total del día tal cual.
+        fabricado = fabricadoInput; vendido = vendidoInput; cortesia = cortesiaInput;
+      } else {
+        // Modo normal: lo escrito se SUMA a lo que ya llevaba registrado hoy.
+        fabricado = existente.fabricado + fabricadoInput;
+        vendido = existente.vendido + vendidoInput;
+        cortesia = existente.cortesia + cortesiaInput;
+      }
+
       if(vendido + cortesia > fabricado){
         alert(`Lo vendido más las cortesías (${vendido + cortesia}) no puede superar lo fabricado (${fabricado}). Se ajustó la cortesía para que calce.`);
         cortesia = Math.max(0, fabricado - vendido);
         if(vendido > fabricado) vendido = fabricado;
       }
-      const fecha = registroFecha;
-      if(!state.registroDiario[fecha]) state.registroDiario[fecha] = {};
       state.registroDiario[fecha][recetaId] = { fabricado, vendido, cortesia };
       ventaFormRecetaId = recetaId;
       const nombreReceta = state.recetas.find(r => r.id === recetaId);
       const nombreTexto = nombreReceta ? nombreReceta.nombre : 'Dulce';
-      ventaFormConfirmMsg = `${nombreTexto} actualizado: ${fabricado} fabricados, ${vendido} vendidos${cortesia > 0 ? `, ${cortesia} cortesías` : ''}.`;
+      ventaFormConfirmMsg = ventaFormMode === 'editar'
+        ? `${nombreTexto} corregido: total del día ahora en ${fabricado} fabricados, ${vendido} vendidos${cortesia > 0 ? `, ${cortesia} cortesías` : ''}.`
+        : `${nombreTexto}: se sumó lo ingresado. Total del día: ${fabricado} fabricados, ${vendido} vendidos${cortesia > 0 ? `, ${cortesia} cortesías` : ''}.`;
       ventaFormOpen = false;
     }
   }
