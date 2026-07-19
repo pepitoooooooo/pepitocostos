@@ -620,6 +620,55 @@
     white-space:nowrap;
   }
   nav.bottom button .ic{ font-size: 18px; }
+  .row input:disabled, .row select:disabled, .name-input:disabled{
+    background: var(--paper-2);
+    color: var(--ink-soft);
+    opacity: 0.8;
+    cursor: not-allowed;
+  }
+  .lock-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    background: var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:10px 12px;
+    margin-bottom:14px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .lock-bar .lock-label{
+    font-size:13px;
+    color:var(--ink);
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .lock-switch{
+    width:44px;
+    height:25px;
+    border-radius:999px;
+    background: var(--line);
+    position:relative;
+    flex-shrink:0;
+    transition: background 0.2s;
+  }
+  .lock-switch.on{ background: var(--cherry); }
+  .lock-switch .knob{
+    position:absolute;
+    top:2px;
+    left:2px;
+    width:21px;
+    height:21px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+    transition: left 0.2s;
+  }
+  .lock-switch.on .knob{ left:21px; }
   nav.bottom button.active{
     color: #fff;
     background: rgba(255,255,255,0.08);
@@ -744,6 +793,7 @@ function defaultState(){
     produccionMensual: 300,
     ventas: {},
     registroDiario: {},
+    bloqueos: { ingredientes: false, recetas: false },
   };
 }
 
@@ -874,6 +924,8 @@ async function loadState(){
     try{
       state = JSON.parse(value);
       if(!state.registroDiario) state.registroDiario = {};
+      if(!state.bloqueos) state.bloqueos = { ingredientes: false, recetas: false };
+      (state.ingredientes || []).forEach(ing => { if(ing.lugarCompra === undefined) ing.lugarCompra = ''; });
       return;
     }catch(e){ /* datos corruptos, se reinicia abajo */ }
   }
@@ -1010,6 +1062,8 @@ async function restoreFromGithub(){
     const jsonStr = decodeURIComponent(escape(atob(info.content.replace(/\n/g, ''))));
     const parsed = JSON.parse(jsonStr);
     if(!parsed.registroDiario) parsed.registroDiario = {};
+    if(!parsed.bloqueos) parsed.bloqueos = { ingredientes: false, recetas: false };
+    (parsed.ingredientes || []).forEach(ing => { if(ing.lugarCompra === undefined) ing.lugarCompra = ''; });
     if(!parsed.ventas) parsed.ventas = {};
     state = parsed;
     await persist();
@@ -1193,31 +1247,47 @@ function render(){
   attachHandlers();
 }
 
+function renderLockBar(tabKey, locked){
+  return `
+    <button class="lock-bar" data-action="toggle-lock-${tabKey}" type="button">
+      <span class="lock-label">${locked ? '🔒 Bloqueado (solo lectura)' : '🔓 Edición habilitada'}</span>
+      <span class="lock-switch ${locked ? 'on' : ''}"><span class="knob"></span></span>
+    </button>
+  `;
+}
+
 function renderIngredientes(){
+  const locked = state.bloqueos.ingredientes;
+  const dis = locked ? 'disabled' : '';
   const cards = state.ingredientes.map(ing => {
     const { costo, base } = costoPorUnidadBase(ing);
     return `
     <div class="card" data-kind="ingrediente" data-id="${ing.id}">
       <div class="stamp-badge">${money(costo)}/${base}</div>
       <div class="card-head">
-        <input class="name-input" data-field="nombre" value="${escapeAttr(ing.nombre)}" placeholder="Nombre del ingrediente">
-        <button class="del-btn" data-action="delete-ingrediente">✕</button>
+        <input class="name-input" data-field="nombre" value="${escapeAttr(ing.nombre)}" placeholder="Nombre del ingrediente" ${dis}>
+        ${locked ? '' : `<button class="del-btn" data-action="delete-ingrediente">✕</button>`}
       </div>
       <div class="row">
         <label>Cantidad</label>
-        <input type="number" step="any" data-field="cantidad" value="${ing.cantidad}">
-        <select data-field="unidad">
+        <input type="number" step="any" data-field="cantidad" value="${ing.cantidad}" ${dis}>
+        <select data-field="unidad" ${dis}>
           ${['kg','g','l','ml','ea'].map(u => `<option value="${u}" ${ing.unidad===u?'selected':''}>${u}</option>`).join('')}
         </select>
       </div>
       <div class="row">
         <label>Precio compra</label>
-        <input type="number" step="any" data-field="precio" value="${ing.precio}">
+        <input type="number" step="any" data-field="precio" value="${ing.precio}" ${dis}>
+      </div>
+      <div class="row">
+        <label>Dónde comprar</label>
+        <input type="text" data-field="lugarCompra" value="${escapeAttr(ing.lugarCompra || '')}" placeholder="Ej: Feria Lo Valledor, Almacén Don José…" ${dis}>
       </div>
     </div>`;
   }).join('');
   return `
     <div class="section-title">🍬 Catálogo de ingredientes</div>
+    ${renderLockBar('ingredientes', locked)}
     <div class="section-hint">Escribe la cantidad y unidad de la presentación que compras (ej: 25 y kg, o 500 y g). El costo por unidad se calcula solo.</div>
     ${cards || '<div class="empty">Aún no tienes ingredientes. Agrega el primero.</div>'}
     <button class="add-btn" data-action="add-ingrediente">+ Agregar ingrediente</button>
@@ -1225,19 +1295,21 @@ function renderIngredientes(){
 }
 
 function renderRecetas(){
+  const locked = state.bloqueos.recetas;
+  const dis = locked ? 'disabled' : '';
   const cards = state.recetas.map(r => {
     const { total, itemCostos, costoPorDulce } = calcReceta(r);
     const itemsHtml = r.items.map((item, idx) => {
       const cInfo = itemCostos[idx];
       return `
       <div class="item-row" data-kind="item" data-receta="${r.id}" data-id="${item.id}">
-        <select data-field="ingredienteId">
+        <select data-field="ingredienteId" ${dis}>
           <option value="">Elegir…</option>
           ${state.ingredientes.map(ing => `<option value="${ing.id}" ${ing.id===item.ingredienteId?'selected':''}>${escapeAttr(ing.nombre)}</option>`).join('')}
         </select>
-        <input type="number" step="any" data-field="cantidadUsada" value="${item.cantidadUsada}">
+        <input type="number" step="any" data-field="cantidadUsada" value="${item.cantidadUsada}" ${dis}>
         <span class="unit-tag">${cInfo.base || ''}</span>
-        <button class="mini-del" data-action="delete-item" title="Quitar">✕</button>
+        ${locked ? '' : `<button class="mini-del" data-action="delete-item" title="Quitar">✕</button>`}
       </div>
       <div class="computed item-cost" style="text-align:left;margin:-4px 0 4px 2px;">${money(cInfo.costo)}</div>`;
     }).join('');
@@ -1245,14 +1317,14 @@ function renderRecetas(){
     <div class="card" data-kind="receta" data-id="${r.id}">
       <div class="stamp-badge">${money(costoPorDulce)}/un</div>
       <div class="card-head">
-        <input class="name-input" data-field="nombre" value="${escapeAttr(r.nombre)}" placeholder="Nombre del dulce">
-        <button class="del-btn" data-action="delete-receta">✕</button>
+        <input class="name-input" data-field="nombre" value="${escapeAttr(r.nombre)}" placeholder="Nombre del dulce" ${dis}>
+        ${locked ? '' : `<button class="del-btn" data-action="delete-receta">✕</button>`}
       </div>
       ${itemsHtml || '<div class="empty" style="padding:10px;">Sin ingredientes aún.</div>'}
       <button class="add-btn" data-action="add-item" data-receta="${r.id}" style="margin-bottom:10px;">+ Ingrediente</button>
       <div class="row">
         <label>Unidades/tanda</label>
-        <input type="number" step="any" data-field="unidadesPorTanda" value="${r.unidadesPorTanda}">
+        <input type="number" step="any" data-field="unidadesPorTanda" value="${r.unidadesPorTanda}" ${dis}>
       </div>
       <div class="totals-strip strip-total-tanda">
         <span>Costo total tanda</span><b>${money(total)}</b>
@@ -1264,6 +1336,7 @@ function renderRecetas(){
   }).join('');
   return `
     <div class="section-title">🧁 Recetas y costo por dulce</div>
+    ${renderLockBar('recetas', locked)}
     <div class="section-hint">Elige los ingredientes de tu catálogo y la cantidad que usas (en la unidad base del ingrediente). El costo se calcula solo.</div>
     ${cards || '<div class="empty">Aún no tienes recetas. Agrega tu primer dulce.</div>'}
     <button class="add-btn" data-action="add-receta">+ Agregar dulce</button>
@@ -1801,11 +1874,18 @@ function onAction(e){
   const action = btn.dataset.action;
 
   if(action === 'add-ingrediente'){
-    state.ingredientes.push({ id: uid(), nombre: '', cantidad: 1, unidad: 'g', precio: 0 });
+    state.ingredientes.push({ id: uid(), nombre: '', cantidad: 1, unidad: 'g', precio: 0, lugarCompra: '' });
   }
   else if(action === 'delete-ingrediente'){
-    const id = btn.closest('[data-kind]').dataset.id;
-    state.ingredientes = state.ingredientes.filter(i => i.id !== id);
+    const card = btn.closest('[data-kind]');
+    const id = card.dataset.id;
+    const nombreInput = card.querySelector('input[data-field="nombre"]');
+    const nombre = (nombreInput && nombreInput.value.trim()) || 'este ingrediente';
+    if(confirm(`¿Eliminar "${nombre}"? Si alguna receta lo usa, quedará sin ese ingrediente asignado.`)){
+      state.ingredientes = state.ingredientes.filter(i => i.id !== id);
+    } else {
+      return;
+    }
   }
   else if(action === 'add-receta'){
     const r = { id: uid(), nombre: 'Nuevo dulce', unidadesPorTanda: 1, items: [] };
@@ -1813,9 +1893,16 @@ function onAction(e){
     state.ventas[r.id] = { unidadesPaquete: 1, precioPaquete: 0, ventasMes: 0 };
   }
   else if(action === 'delete-receta'){
-    const id = btn.closest('[data-kind]').dataset.id;
-    state.recetas = state.recetas.filter(r => r.id !== id);
-    delete state.ventas[id];
+    const card = btn.closest('[data-kind]');
+    const id = card.dataset.id;
+    const nombreInput = card.querySelector('input[data-field="nombre"]');
+    const nombre = (nombreInput && nombreInput.value.trim()) || 'este dulce';
+    if(confirm(`¿Eliminar "${nombre}"? Se borra también su estimación mensual y su historial en Producción diaria.`)){
+      state.recetas = state.recetas.filter(r => r.id !== id);
+      delete state.ventas[id];
+    } else {
+      return;
+    }
   }
   else if(action === 'delete-receta-resumen'){
     const id = btn.closest('[data-kind]').dataset.id;
@@ -1833,9 +1920,13 @@ function onAction(e){
     if(r) r.items.push({ id: uid(), ingredienteId: '', cantidadUsada: 0 });
   }
   else if(action === 'delete-item'){
-    const wrapper = btn.closest('[data-kind]');
-    const r = state.recetas.find(r => r.id === wrapper.dataset.receta);
-    if(r) r.items = r.items.filter(it => it.id !== wrapper.dataset.id);
+    if(confirm('¿Quitar este ingrediente de la receta?')){
+      const wrapper = btn.closest('[data-kind]');
+      const r = state.recetas.find(r => r.id === wrapper.dataset.receta);
+      if(r) r.items = r.items.filter(it => it.id !== wrapper.dataset.id);
+    } else {
+      return;
+    }
   }
   else if(action === 'add-gasto'){
     state.gastos.push({ id: uid(), nombre: '', monto: 0 });
@@ -1859,6 +1950,12 @@ function onAction(e){
     } else {
       return;
     }
+  }
+  else if(action === 'toggle-lock-ingredientes'){
+    state.bloqueos.ingredientes = !state.bloqueos.ingredientes;
+  }
+  else if(action === 'toggle-lock-recetas'){
+    state.bloqueos.recetas = !state.bloqueos.recetas;
   }
   else if(action === 'toggle-calendario'){
     calendarOpen = !calendarOpen;
