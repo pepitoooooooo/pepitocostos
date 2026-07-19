@@ -5,7 +5,7 @@
       "nombre": "Azucar",
       "cantidad": 1,
       "unidad": "kg",
-      "precio": "1200"
+      "precio": "855"
     },
     {
       "id": "929onaah",
@@ -99,9 +99,76 @@
       "precio": "9900"
     }
   ],
-  "recetas": [],
+  "recetas": [
+    {
+      "id": "00dn8rjf",
+      "nombre": "Pajaritos",
+      "unidadesPorTanda": "45",
+      "items": [
+        {
+          "id": "1jx52pdk",
+          "ingredienteId": "nfqecha8",
+          "cantidadUsada": "220"
+        },
+        {
+          "id": "ieogzh02",
+          "ingredienteId": "929onaah",
+          "cantidadUsada": "1020"
+        },
+        {
+          "id": "snmrpsbo",
+          "ingredienteId": "wt3ezpv6",
+          "cantidadUsada": "40"
+        },
+        {
+          "id": "pc4dr5r8",
+          "ingredienteId": "4p2py1ge",
+          "cantidadUsada": "1"
+        },
+        {
+          "id": "nsevnt34",
+          "ingredienteId": "d3qr73i6",
+          "cantidadUsada": "100"
+        },
+        {
+          "id": "d13hahas",
+          "ingredienteId": "6nkpn15c",
+          "cantidadUsada": "30"
+        },
+        {
+          "id": "rm1yai1i",
+          "ingredienteId": "95oz6cyi",
+          "cantidadUsada": "10"
+        },
+        {
+          "id": "fumt93pl",
+          "ingredienteId": "cf18af3r",
+          "cantidadUsada": "100"
+        },
+        {
+          "id": "y12ag75j",
+          "ingredienteId": "dsr822lr",
+          "cantidadUsada": "300"
+        }
+      ]
+    }
+  ],
   "gastos": [],
   "produccionMensual": "0",
-  "ventas": {},
-  "registroDiario": {}
+  "ventas": {
+    "00dn8rjf": {
+      "unidadesPaquete": 1,
+      "precioPaquete": 0,
+      "ventasMes": 0
+    }
+  },
+  "registroDiario": {
+    "2026-07-18": {
+      "00dn8rjf": {
+        "fabricado": 92,
+        "vendido": 87,
+        "cortesia": 5
+      }
+    }
+  }
 }
