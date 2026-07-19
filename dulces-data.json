@@ -5,98 +5,112 @@
       "nombre": "Azucar",
       "cantidad": 1,
       "unidad": "kg",
-      "precio": "855"
+      "precio": "855",
+      "lugarCompra": "Fruna"
     },
     {
       "id": "929onaah",
       "nombre": "Harina",
       "cantidad": "25",
       "unidad": "kg",
-      "precio": "20140"
+      "precio": "20140",
+      "lugarCompra": "Molino Fuentes"
     },
     {
       "id": "wt3ezpv6",
       "nombre": "Levadura",
       "cantidad": 500,
       "unidad": "g",
-      "precio": "2490"
+      "precio": "2490",
+      "lugarCompra": "ADN"
     },
     {
       "id": "4p2py1ge",
       "nombre": "Huevo",
       "cantidad": 1,
       "unidad": "ea",
-      "precio": "199"
+      "precio": "199",
+      "lugarCompra": "Fundo el Peumo"
     },
     {
       "id": "d3qr73i6",
       "nombre": "Vainilla",
       "cantidad": "1.5",
       "unidad": "l",
-      "precio": "1500"
+      "precio": "1500",
+      "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
       "id": "6nkpn15c",
       "nombre": "Limon",
       "cantidad": 500,
       "unidad": "ml",
-      "precio": 2990
+      "precio": 2990,
+      "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
       "id": "95oz6cyi",
       "nombre": "Canela",
       "cantidad": 500,
       "unidad": "ml",
-      "precio": 1500
+      "precio": 1500,
+      "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
       "id": "cf18af3r",
       "nombre": "Margarina",
       "cantidad": "1",
       "unidad": "kg",
-      "precio": "2800"
+      "precio": "2800",
+      "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
       "id": "dsr822lr",
       "nombre": "Merengue",
       "cantidad": 600,
       "unidad": "g",
-      "precio": "4000"
+      "precio": "4000",
+      "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
       "id": "axwel3ok",
       "nombre": "Manjar",
       "cantidad": 6,
       "unidad": "kg",
-      "precio": "22000"
+      "precio": "22000",
+      "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
       "id": "pwwviz7f",
       "nombre": "Pastelera",
       "cantidad": "400",
       "unidad": "g",
-      "precio": "1800"
+      "precio": "1800",
+      "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
       "id": "hjcwbwsr",
       "nombre": "Azucar flor",
       "cantidad": 1,
       "unidad": "kg",
-      "precio": "2000"
+      "precio": "2000",
+      "lugarCompra": ""
     },
     {
       "id": "ghuzm2sl",
       "nombre": "Aceite",
       "cantidad": 900,
       "unidad": "ml",
-      "precio": "1400"
+      "precio": "1400",
+      "lugarCompra": "ADN"
     },
     {
       "id": "zobavhpx",
       "nombre": "Bandeja",
       "cantidad": "100",
       "unidad": "ea",
-      "precio": "9900"
+      "precio": "9900",
+      "lugarCompra": "Local X (Vega)"
     }
   ],
   "recetas": [
@@ -304,5 +318,9 @@
         "cortesia": 0
       }
     }
+  },
+  "bloqueos": {
+    "ingredientes": true,
+    "recetas": false
   }
 }
