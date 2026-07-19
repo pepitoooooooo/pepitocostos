@@ -324,6 +324,181 @@
     font-size: 17px;
   }
   .btn-venta-cortesia:active{ background: var(--mint-dark); }
+  .cal-box{
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 14px;
+  }
+  .cal-toggle-row{
+    width: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .cal-toggle-icon{
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-style: normal;
+  }
+  .cal-dot-inline{
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    margin-left: 4px;
+  }
+  .cal-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    margin-top: 12px;
+  }
+  .cal-header button{
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: var(--cherry);
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .cal-header button:active{ background: rgba(156,31,16,0.08); }
+  .cal-title{
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .cal-grid{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-dow{
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    padding-bottom: 4px;
+  }
+  .cal-day{
+    position: relative;
+    aspect-ratio: 1;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cal-day.empty{ cursor: default; }
+  .cal-day:active{ background: rgba(43,24,16,0.08); }
+  .cal-day.today{ border: 1.5px solid var(--gold); }
+  .cal-day.selected{ background: var(--cherry); color: #fff; font-weight: 700; }
+  .cal-dot{
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  .cal-day.selected .cal-dot{ background: #fff; }
+  .periodo-toggle{
+    display: flex;
+    gap: 6px;
+    margin-top: 16px;
+    margin-bottom: 4px;
+  }
+  .periodo-btn{
+    flex: 1;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 0;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .periodo-btn.active{
+    background: var(--cherry);
+    border-color: var(--cherry);
+    color: #fff;
+  }
+  .confirm-banner{
+    background: rgba(143,97,32,0.14);
+    color: var(--mint-dark);
+    border: 1px solid rgba(143,97,32,0.3);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .registrados-hoy{
+    margin-bottom: 18px;
+  }
+  .registrados-hoy-title{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 4px 6px;
+    font-weight: 700;
+  }
+  .registrado-row{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 12px;
+    margin-bottom: 6px;
+  }
+  .registrado-tap{
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    min-width: 0;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .registrado-tap:active{ opacity: 0.6; }
+  .registrado-detalle{
+    font-family: -apple-system, sans-serif;
+    font-style: normal;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    text-align: right;
+  }
   .tag-chip{
     font-size: 11px;
     font-weight: 700;
@@ -588,9 +763,62 @@ function formatFechaCorta(fechaStr){
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
+function pad2(n){ return String(n).padStart(2, '0'); }
+
+function parseDateStr(s){
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function dateToStr(d){
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+
+function addDaysStr(s, n){
+  const d = parseDateStr(s);
+  d.setDate(d.getDate() + n);
+  return dateToStr(d);
+}
+
+function getWeekRange(fechaStr){
+  const d = parseDateStr(fechaStr);
+  const dow = d.getDay(); // 0=Dom..6=Sab
+  const diffToMonday = (dow === 0) ? -6 : 1 - dow;
+  const start = new Date(d); start.setDate(d.getDate() + diffToMonday);
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  return { start: dateToStr(start), end: dateToStr(end) };
+}
+
+function getMonthRange(fechaStr){
+  const d = parseDateStr(fechaStr);
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return { start: dateToStr(start), end: dateToStr(end) };
+}
+
+function getMonthMatrix(year, monthIndex0){
+  const firstDow = new Date(year, monthIndex0, 1).getDay(); // 0 Dom..6 Sab
+  const leadBlanks = (firstDow === 0) ? 6 : firstDow - 1; // semana empieza lunes
+  const daysInMonth = new Date(year, monthIndex0 + 1, 0).getDate();
+  const cells = [];
+  for(let i=0;i<leadBlanks;i++) cells.push(null);
+  for(let day=1; day<=daysInMonth; day++){
+    cells.push(dateToStr(new Date(year, monthIndex0, day)));
+  }
+  while(cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
 let state = null;
 let activeTab = 'ingredientes';
 let registroFecha = todayStr();
+let resumenPeriodo = 'dia';
+let calYear = null;
+let calMonth = null;
+let calendarOpen = false;
+let ventaFormOpen = false;
+let ventaFormRecetaId = null;
+let ventaFormConfirmMsg = null;
 let saveTimer = null;
 
 // Usa el almacenamiento de Claude si está disponible (vista previa del artefacto);
@@ -885,6 +1113,43 @@ function diaTieneDatos(fecha){
   return Object.values(dia).some(e => (Number(e.fabricado)||0) > 0 || (Number(e.vendido)||0) > 0 || (Number(e.cortesia)||0) > 0);
 }
 
+function sumRange(startStr, endStr){
+  const totals = { totFabricado:0, totVendido:0, totCortesia:0, totPerdidaUnid:0, ingreso:0, costoProduccion:0, perdidaDinero:0, costoCortesias:0, gananciaNeta:0 };
+  let cur = startStr;
+  let guard = 0;
+  while(cur <= endStr && guard < 370){
+    const t = calcDia(cur).totales;
+    totals.totFabricado += t.totFabricado;
+    totals.totVendido += t.totVendido;
+    totals.totCortesia += t.totCortesia;
+    totals.totPerdidaUnid += t.totPerdidaUnid;
+    totals.ingreso += t.ingreso;
+    totals.costoProduccion += t.costoProduccion;
+    totals.perdidaDinero += t.perdidaDinero;
+    totals.costoCortesias += t.costoCortesias;
+    totals.gananciaNeta += t.gananciaNeta;
+    cur = addDaysStr(cur, 1);
+    guard++;
+  }
+  return totals;
+}
+
+function getPeriodoTotales(fecha){
+  if(resumenPeriodo === 'semana'){
+    const { start, end } = getWeekRange(fecha);
+    const label = `Semana del ${formatFechaCorta(start)} al ${formatFechaCorta(end)}`;
+    return { totales: sumRange(start, end), label };
+  }
+  if(resumenPeriodo === 'mes'){
+    const { start, end } = getMonthRange(fecha);
+    const d = parseDateStr(fecha);
+    let label = d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+    label = label.charAt(0).toUpperCase() + label.slice(1);
+    return { totales: sumRange(start, end), label };
+  }
+  return { totales: calcDia(fecha).totales, label: formatFechaCorta(fecha) };
+}
+
 // ---------- Rendering ----------
 
 function render(){
@@ -1003,45 +1268,60 @@ function renderGastos(){
   `;
 }
 
+function renderCalendario(fecha){
+  if(calYear === null){
+    const d = parseDateStr(fecha);
+    calYear = d.getFullYear();
+    calMonth = d.getMonth();
+  }
+  const hoy = todayStr();
+  const esHoy = fecha === hoy;
+  let gridHtml = '';
+  if(calendarOpen){
+    const cells = getMonthMatrix(calYear, calMonth);
+    const tituloMes = new Date(calYear, calMonth, 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+    const dow = ['L','M','X','J','V','S','D'];
+    const cellsHtml = cells.map(c => {
+      if(!c) return `<span class="cal-day empty"></span>`;
+      const dayNum = Number(c.split('-')[2]);
+      const marcado = diaTieneDatos(c);
+      const clases = ['cal-day'];
+      if(c === fecha) clases.push('selected');
+      if(c === hoy) clases.push('today');
+      return `<button class="${clases.join(' ')}" data-action="ver-dia" data-fecha="${c}">${dayNum}${marcado ? '<span class="cal-dot"></span>' : ''}</button>`;
+    }).join('');
+    gridHtml = `
+      <div class="cal-header">
+        <button data-action="cal-prev-month" title="Mes anterior">‹</button>
+        <span class="cal-title">${tituloMes.charAt(0).toUpperCase() + tituloMes.slice(1)}</span>
+        <button data-action="cal-next-month" title="Mes siguiente">›</button>
+      </div>
+      <div class="cal-grid">
+        ${dow.map(x => `<span class="cal-dow">${x}</span>`).join('')}
+        ${cellsHtml}
+      </div>
+      <div class="row" style="margin-top:10px; margin-bottom:0;">
+        <label style="width:70px;">Ir a fecha</label>
+        <input type="date" id="registro-fecha-input" value="${fecha}">
+      </div>
+    `;
+  }
+  return `
+    <div class="cal-box">
+      <button class="cal-toggle-row" data-action="toggle-calendario">
+        <span>📅 ${esHoy ? 'Hoy · ' : ''}${formatFechaCorta(fecha)}${diaTieneDatos(fecha) ? ' <span class="cal-dot-inline"></span>' : ''}</span>
+        <span class="cal-toggle-icon">${calendarOpen ? '▴' : '▾'}</span>
+      </button>
+      ${gridHtml}
+    </div>
+  `;
+}
+
 function renderRegistro(){
   if(!state.recetas.length){
     return `<div class="section-title">🗓️ Producción diaria</div><div class="empty">Crea al menos un dulce en la pestaña Recetas para poder registrar tu producción diaria.</div>`;
   }
   const fecha = registroFecha;
-  const dia = calcDia(fecha);
-  const t = dia.totales;
-
-  const cards = state.recetas.map(r => {
-    const info = dia.porReceta.find(p => p.recetaId === r.id);
-    const entry = getRecetaEntradaDia(fecha, r.id);
-    const sinVender = info.perdidaUnidades > 0;
-    const hayCortesia = info.cortesia > 0;
-    const chips = [];
-    if(sinVender) chips.push(`<span class="tag-chip neg">${info.perdidaUnidades} sin vender · -${money(info.perdidaDinero)}</span>`);
-    if(hayCortesia) chips.push(`<span class="tag-chip gift">🎁 ${info.cortesia} cortesía${info.cortesia>1?'s':''} · -${money(info.costoCortesia)}</span>`);
-    if(!sinVender && !hayCortesia) chips.push(`<span class="tag-chip pos">Todo vendido ✓</span>`);
-    return `
-    <div class="card" data-kind="registro-item" data-fecha="${fecha}" data-id="${r.id}" style="padding:10px 12px; margin-bottom:8px;">
-      <div style="font-family:Georgia,serif; font-style:italic; font-size:15px; margin-bottom:8px;">${escapeAttr(r.nombre)}</div>
-      <div class="row" style="margin-bottom:0;">
-        <label style="width:64px;">Fabricado</label>
-        <input type="number" min="0" step="any" data-field="fabricado" value="${entry.fabricado}">
-        <label style="width:56px;">Vendido</label>
-        <input type="number" min="0" max="${entry.fabricado}" step="any" data-field="vendido" value="${entry.vendido}">
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <label style="width:64px;">Cortesía</label>
-        <input type="number" min="0" step="any" data-field="cortesia" value="${entry.cortesia}">
-      </div>
-      <div class="chip-box" style="display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 2px;">${chips.join('')}</div>
-      <div class="row" style="margin-top:8px; margin-bottom:0; gap:6px;">
-        <input type="number" min="0" step="any" class="venta-quick-input" placeholder="Cantidad">
-        <button class="btn-venta btn-venta-minus" data-action="quitar-venta" data-fecha="${fecha}" data-id="${r.id}" title="Restar venta (corregir error)">−</button>
-        <button class="btn-venta" data-action="registrar-venta" data-fecha="${fecha}" data-id="${r.id}" title="Registrar venta">+</button>
-        <button class="btn-venta btn-venta-cortesia" data-action="registrar-cortesia" data-fecha="${fecha}" data-id="${r.id}" title="Regalar como cortesía">🎁</button>
-      </div>
-    </div>`;
-  }).join('');
 
   const historyDates = Object.keys(state.registroDiario)
     .filter(f => diaTieneDatos(f))
@@ -1059,21 +1339,79 @@ function renderRegistro(){
     </div>`;
   }).join('');
 
+  const { totales: t, label: periodoLabel } = getPeriodoTotales(fecha);
+
+  if(!ventaFormRecetaId || !state.recetas.some(r => r.id === ventaFormRecetaId)){
+    ventaFormRecetaId = state.recetas[0].id;
+  }
+  const dulceOptions = state.recetas.map(r => `<option value="${r.id}" ${r.id===ventaFormRecetaId?'selected':''}>${escapeAttr(r.nombre)}</option>`).join('');
+  const entryActual = getRecetaEntradaDia(fecha, ventaFormRecetaId);
+
+  const registradosHoy = state.recetas
+    .map(r => ({ receta: r, entry: getRecetaEntradaDia(fecha, r.id) }))
+    .filter(x => x.entry.fabricado > 0 || x.entry.vendido > 0 || x.entry.cortesia > 0);
+  const registradosHoyHtml = registradosHoy.length ? `
+    <div class="registrados-hoy">
+      <div class="registrados-hoy-title">Ya registrado ${fecha === todayStr() ? 'hoy' : 'ese día'}</div>
+      ${registradosHoy.map(x => `
+        <div class="registrado-row">
+          <div class="registrado-tap" data-action="editar-registro-dulce" data-receta-id="${x.receta.id}">
+            <span>${escapeAttr(x.receta.nombre)}</span>
+            <span class="registrado-detalle">${x.entry.fabricado} fab · ${x.entry.vendido} vend${x.entry.cortesia>0 ? ` · 🎁 ${x.entry.cortesia}` : ''}</span>
+          </div>
+          <button class="del-btn" data-action="delete-registro-dulce" data-receta-id="${x.receta.id}" data-nombre="${escapeAttr(x.receta.nombre)}" title="Eliminar este registro">✕</button>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  const ventaFormHtml = `
+    ${ventaFormConfirmMsg ? `<div class="confirm-banner">✓ ${ventaFormConfirmMsg}</div>` : ''}
+    <button class="add-btn" data-action="toggle-venta-form" style="margin-bottom:${ventaFormOpen ? '10px' : '18px'};">
+      ${ventaFormOpen ? '▴ Cerrar' : '+ Ingresar venta del día'}
+    </button>
+    ${ventaFormOpen ? `
+    <div class="card venta-form-card" style="margin-bottom:18px;">
+      <div class="row" style="margin-bottom:10px;">
+        <label style="width:64px;">Dulce</label>
+        <select id="venta-form-dulce">${dulceOptions}</select>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <label style="width:64px;">Fabricado</label>
+        <input type="number" min="0" step="any" id="venta-form-fabricado" value="${entryActual.fabricado}">
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <label style="width:64px;">Vendido</label>
+        <input type="number" min="0" step="any" id="venta-form-vendido" value="${entryActual.vendido}">
+      </div>
+      <div class="row" style="margin-bottom:0;">
+        <label style="width:64px;">Cortesía</label>
+        <input type="number" min="0" step="any" id="venta-form-cortesia" value="${entryActual.cortesia}">
+      </div>
+      <button class="btn-venta" data-action="form-confirmar-venta" style="width:100%; margin-top:14px; padding:11px 0;">Confirmar</button>
+    </div>
+    ` : ''}
+    ${registradosHoyHtml}
+  `;
+
   return `
     <div class="section-title">🗓️ Producción diaria</div>
-    <div class="section-hint">Registra cada día cuánto fabricaste. Escribe la cantidad y toca <b>+</b> para sumar una venta, <b>−</b> para corregir un error, o <b>🎁</b> si regalaste alguno como cortesía para captar clientes. No puedes repartir más de lo que fabricaste. Lo que sobre sin vender ni regalar queda marcado como pérdida.</div>
-    <div class="row" style="margin-bottom:14px;">
-      <label style="width:60px;">Fecha</label>
-      <input type="date" id="registro-fecha-input" value="${fecha}">
+    <div class="section-hint">Toca el calendario para elegir el día. Luego toca "Ingresar venta del día", elige el dulce de la lista, escribe cuánto fabricaste, vendiste y regalaste, y confirma.</div>
+    ${renderCalendario(fecha)}
+    ${ventaFormHtml}
+    <div class="periodo-toggle">
+      <button class="periodo-btn ${resumenPeriodo==='dia'?'active':''}" data-action="set-periodo" data-periodo="dia">Día</button>
+      <button class="periodo-btn ${resumenPeriodo==='semana'?'active':''}" data-action="set-periodo" data-periodo="semana">Semana</button>
+      <button class="periodo-btn ${resumenPeriodo==='mes'?'active':''}" data-action="set-periodo" data-periodo="mes">Mes</button>
     </div>
-    ${cards}
-    <div class="card" style="background:var(--ink); color:#fff; margin-top:4px;">
-      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Producido / vendido</span><b id="dia-fabvend">${t.totFabricado} / ${t.totVendido} un</b></div>
-      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ingresos del día</span><b id="dia-ingreso">${money(t.ingreso)}</b></div>
+    <div class="card" style="background:var(--ink); color:#fff; margin-top:8px;">
+      <div class="totals-strip" style="border:none; padding:2px 0 8px;"><span id="periodo-label" style="font-style:italic; color:#d8c4ab;">${periodoLabel}</span><span></span></div>
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Producido / vendido</span><b id="dia-fabvend">${t.totFabricado} / ${t.totVendido} un</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Ingresos</span><b id="dia-ingreso">${money(t.ingreso)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Costo de producción</span><b id="dia-costo">${money(t.costoProduccion)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Cortesías entregadas</span><b id="dia-cortesias" style="color:#f4d99a;">${t.totCortesia} un · -${money(t.costoCortesias)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Pérdida por no venta</span><b id="dia-perdida" style="color:#f0a8a8;">${money(t.perdidaDinero)}</b></div>
-      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ganancia neta del día</span><b id="dia-ganancia" class="${t.gananciaNeta>=0?'pos-dark':'neg-dark'}" style="font-size:16px;">${money(t.gananciaNeta)}</b></div>
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ganancia neta</span><b id="dia-ganancia" class="${t.gananciaNeta>=0?'pos-dark':'neg-dark'}" style="font-size:16px;">${money(t.gananciaNeta)}</b></div>
     </div>
     ${historyDates.length ? `<div class="section-title" style="margin-top:22px; font-size:16px;">Historial</div>${historyHtml}` : ''}
   `;
@@ -1084,10 +1422,29 @@ function renderResumen(){
   if(!rows.length){
     return `<div class="section-title">📊 Resumen de ganancias</div><div class="empty">Crea al menos un dulce en la pestaña Recetas para ver tu resumen.</div>`;
   }
+  const { totales: tp, label: periodoLabelResumen } = getPeriodoTotales(registroFecha);
+  const ventasRealesHtml = `
+    <div class="section-title" style="margin-top:0;">📈 Ventas registradas</div>
+    <div class="section-hint">Esto viene de lo que has ido anotando en la pestaña Diario, no de la estimación de abajo.</div>
+    <div class="periodo-toggle">
+      <button class="periodo-btn ${resumenPeriodo==='dia'?'active':''}" data-action="set-periodo" data-periodo="dia">Día</button>
+      <button class="periodo-btn ${resumenPeriodo==='semana'?'active':''}" data-action="set-periodo" data-periodo="semana">Semana</button>
+      <button class="periodo-btn ${resumenPeriodo==='mes'?'active':''}" data-action="set-periodo" data-periodo="mes">Mes</button>
+    </div>
+    <div class="card" style="background:var(--ink); color:#fff; margin-top:8px; margin-bottom:22px;">
+      <div class="totals-strip" style="border:none; padding:2px 0 8px;"><span style="font-style:italic; color:#d8c4ab;">${periodoLabelResumen}</span><span></span></div>
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Vendido</span><b>${tp.totVendido} un</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Ingresos</span><b>${money(tp.ingreso)}</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Cortesías</span><b style="color:#f4d99a;">${tp.totCortesia} un · -${money(tp.costoCortesias)}</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Pérdida por no venta</span><b style="color:#f0a8a8;">${money(tp.perdidaDinero)}</b></div>
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ganancia neta</span><b class="${tp.gananciaNeta>=0?'pos-dark':'neg-dark'}" style="font-size:16px;">${money(tp.gananciaNeta)}</b></div>
+    </div>
+  `;
   const cards = rows.map(r => `
     <div class="card resumen-card" data-kind="resumen" data-id="${r.receta.id}">
       <div class="card-head" style="margin-bottom:8px;">
-        <span class="name-input" style="border:none;">${escapeAttr(r.receta.nombre)}</span>
+        <span class="name-input" style="border:none; flex:1;">${escapeAttr(r.receta.nombre)}</span>
+        <button class="del-btn" data-action="delete-receta-resumen" data-nombre="${escapeAttr(r.receta.nombre)}" title="Eliminar este dulce">✕</button>
       </div>
       <div class="row">
         <label>Vendes</label>
@@ -1114,12 +1471,13 @@ function renderResumen(){
   `).join('');
   const totalMensual = rows.reduce((s,r) => s + r.gananciaMensual, 0);
   return `
-    <div class="section-title">📊 Resumen de ganancias</div>
+    ${ventasRealesHtml}
+    <div class="section-title">📊 Estimación mensual</div>
     <div class="section-hint">Escribe cómo vendes cada dulce (ej: 3 unidades por $1.000) y cuántas unidades vendes al mes. Todo lo demás viene de tus otras pestañas.</div>
     ${cards}
     <div class="card" style="background:var(--ink); color:#fff;">
       <div class="totals-strip" style="border:none; padding:0;">
-        <span>Ganancia mensual total</span><b style="font-size:16px;">${money(totalMensual)}</b>
+        <span>Ganancia mensual total (estimada)</span><b style="font-size:16px;">${money(totalMensual)}</b>
       </div>
     </div>
   `;
@@ -1179,6 +1537,19 @@ function attachHandlers(){
   if(fechaInput){
     fechaInput.addEventListener('change', () => {
       registroFecha = fechaInput.value || todayStr();
+      const d = parseDateStr(registroFecha);
+      calYear = d.getFullYear();
+      calMonth = d.getMonth();
+      ventaFormConfirmMsg = null;
+      render();
+    });
+  }
+
+  const ventaFormDulce = document.getElementById('venta-form-dulce');
+  if(ventaFormDulce){
+    ventaFormDulce.addEventListener('change', () => {
+      ventaFormRecetaId = ventaFormDulce.value;
+      ventaFormConfirmMsg = null;
       render();
     });
   }
@@ -1277,7 +1648,7 @@ function softUpdateRegistro(){
     const vendidoInput = card.querySelector('input[data-field="vendido"]');
     if(vendidoInput) vendidoInput.max = info.fabricado;
   });
-  const t = dia.totales;
+  const { totales: t } = getPeriodoTotales(registroFecha);
   const setText = (id, value) => { const el = document.getElementById(id); if(el) el.textContent = value; };
   setText('dia-fabvend', `${t.totFabricado} / ${t.totVendido} un`);
   setText('dia-ingreso', money(t.ingreso));
@@ -1401,6 +1772,16 @@ function onAction(e){
     state.recetas = state.recetas.filter(r => r.id !== id);
     delete state.ventas[id];
   }
+  else if(action === 'delete-receta-resumen'){
+    const id = btn.closest('[data-kind]').dataset.id;
+    const nombre = btn.dataset.nombre || 'este dulce';
+    if(confirm(`¿Eliminar "${nombre}"? Se borra también su receta, su estimación mensual y su historial en Producción diaria.`)){
+      state.recetas = state.recetas.filter(r => r.id !== id);
+      delete state.ventas[id];
+    } else {
+      return;
+    }
+  }
   else if(action === 'add-item'){
     const recetaId = btn.dataset.receta;
     const r = state.recetas.find(r => r.id === recetaId);
@@ -1420,66 +1801,88 @@ function onAction(e){
   }
   else if(action === 'ver-dia'){
     registroFecha = btn.dataset.fecha;
+    const d = parseDateStr(registroFecha);
+    calYear = d.getFullYear();
+    calMonth = d.getMonth();
+    ventaFormConfirmMsg = null;
   }
   else if(action === 'delete-dia'){
     delete state.registroDiario[btn.dataset.fecha];
     if(registroFecha === btn.dataset.fecha) registroFecha = todayStr();
   }
-  else if(action === 'registrar-venta'){
-    const card = btn.closest('[data-kind="registro-item"]');
-    const input = card ? card.querySelector('.venta-quick-input') : null;
-    const cantidad = input ? (Number(input.value) || 0) : 0;
-    if(cantidad > 0){
-      const fecha = btn.dataset.fecha;
-      const recetaId = btn.dataset.id;
-      if(!state.registroDiario[fecha]) state.registroDiario[fecha] = {};
-      if(!state.registroDiario[fecha][recetaId]) state.registroDiario[fecha][recetaId] = { fabricado: 0, vendido: 0, cortesia: 0 };
-      const entry = state.registroDiario[fecha][recetaId];
-      const fabricado = Number(entry.fabricado) || 0;
-      const actual = Number(entry.vendido) || 0;
-      const cortesia = Number(entry.cortesia) || 0;
-      const disponible = Math.max(0, fabricado - actual - cortesia);
-      if(cantidad > disponible){
-        alert(`Solo quedan ${disponible} sin repartir de este dulce hoy (fabricaste ${fabricado}).`);
+  else if(action === 'toggle-calendario'){
+    calendarOpen = !calendarOpen;
+    render();
+    return;
+  }
+  else if(action === 'cal-prev-month'){
+    calMonth--;
+    if(calMonth < 0){ calMonth = 11; calYear--; }
+    render();
+    return;
+  }
+  else if(action === 'cal-next-month'){
+    calMonth++;
+    if(calMonth > 11){ calMonth = 0; calYear++; }
+    render();
+    return;
+  }
+  else if(action === 'set-periodo'){
+    resumenPeriodo = btn.dataset.periodo;
+    render();
+    return;
+  }
+  else if(action === 'toggle-venta-form'){
+    ventaFormOpen = !ventaFormOpen;
+    ventaFormConfirmMsg = null;
+    render();
+    return;
+  }
+  else if(action === 'editar-registro-dulce'){
+    ventaFormRecetaId = btn.dataset.recetaId;
+    ventaFormOpen = true;
+    ventaFormConfirmMsg = null;
+    render();
+    return;
+  }
+  else if(action === 'delete-registro-dulce'){
+    const recetaId = btn.dataset.recetaId;
+    const nombre = btn.dataset.nombre || 'este dulce';
+    if(confirm(`¿Borrar el registro de "${nombre}" de este día?`)){
+      const fecha = registroFecha;
+      if(state.registroDiario[fecha]){
+        delete state.registroDiario[fecha][recetaId];
+        if(Object.keys(state.registroDiario[fecha]).length === 0){
+          delete state.registroDiario[fecha];
+        }
       }
-      entry.vendido = actual + Math.min(cantidad, disponible);
-      if(input) input.value = '';
+      ventaFormConfirmMsg = null;
+    } else {
+      return;
     }
   }
-  else if(action === 'quitar-venta'){
-    const card = btn.closest('[data-kind="registro-item"]');
-    const input = card ? card.querySelector('.venta-quick-input') : null;
-    const cantidad = input ? (Number(input.value) || 0) : 0;
-    if(cantidad > 0){
-      const fecha = btn.dataset.fecha;
-      const recetaId = btn.dataset.id;
-      if(!state.registroDiario[fecha]) state.registroDiario[fecha] = {};
-      if(!state.registroDiario[fecha][recetaId]) state.registroDiario[fecha][recetaId] = { fabricado: 0, vendido: 0, cortesia: 0 };
-      const entry = state.registroDiario[fecha][recetaId];
-      const actual = Number(entry.vendido) || 0;
-      entry.vendido = Math.max(0, actual - cantidad);
-      if(input) input.value = '';
-    }
-  }
-  else if(action === 'registrar-cortesia'){
-    const card = btn.closest('[data-kind="registro-item"]');
-    const input = card ? card.querySelector('.venta-quick-input') : null;
-    const cantidad = input ? (Number(input.value) || 0) : 0;
-    if(cantidad > 0){
-      const fecha = btn.dataset.fecha;
-      const recetaId = btn.dataset.id;
-      if(!state.registroDiario[fecha]) state.registroDiario[fecha] = {};
-      if(!state.registroDiario[fecha][recetaId]) state.registroDiario[fecha][recetaId] = { fabricado: 0, vendido: 0, cortesia: 0 };
-      const entry = state.registroDiario[fecha][recetaId];
-      const fabricado = Number(entry.fabricado) || 0;
-      const vendido = Number(entry.vendido) || 0;
-      const actual = Number(entry.cortesia) || 0;
-      const disponible = Math.max(0, fabricado - vendido - actual);
-      if(cantidad > disponible){
-        alert(`Solo quedan ${disponible} sin repartir de este dulce hoy (fabricaste ${fabricado}).`);
+  else if(action === 'form-confirmar-venta'){
+    const dulceSel = document.getElementById('venta-form-dulce');
+    const recetaId = dulceSel ? dulceSel.value : '';
+    if(!recetaId){
+      alert('Elige qué dulce vas a registrar.');
+    } else {
+      let fabricado = Number(document.getElementById('venta-form-fabricado').value) || 0;
+      let vendido = Number(document.getElementById('venta-form-vendido').value) || 0;
+      let cortesia = Number(document.getElementById('venta-form-cortesia').value) || 0;
+      if(vendido + cortesia > fabricado){
+        alert(`Lo vendido más las cortesías (${vendido + cortesia}) no puede superar lo fabricado (${fabricado}). Se ajustó la cortesía para que calce.`);
+        cortesia = Math.max(0, fabricado - vendido);
+        if(vendido > fabricado) vendido = fabricado;
       }
-      entry.cortesia = actual + Math.min(cantidad, disponible);
-      if(input) input.value = '';
+      const fecha = registroFecha;
+      if(!state.registroDiario[fecha]) state.registroDiario[fecha] = {};
+      state.registroDiario[fecha][recetaId] = { fabricado, vendido, cortesia };
+      ventaFormRecetaId = recetaId;
+      const nombreReceta = state.recetas.find(r => r.id === recetaId);
+      const nombreTexto = nombreReceta ? nombreReceta.nombre : 'Dulce';
+      ventaFormConfirmMsg = `${nombreTexto} actualizado: ${fabricado} fabricados, ${vendido} vendidos${cortesia > 0 ? `, ${cortesia} cortesías` : ''}.`;
+      ventaFormOpen = false;
     }
   }
   persist();
