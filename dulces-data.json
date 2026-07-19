@@ -92,7 +92,7 @@
       "precio": "1400"
     },
     {
-      "id": "6e18qgl6",
+      "id": "zobavhpx",
       "nombre": "Bandeja",
       "cantidad": "100",
       "unidad": "ea",
@@ -273,17 +273,17 @@
     "00dn8rjf": {
       "unidadesPaquete": "3",
       "precioPaquete": "1000",
-      "ventasMes": 0
+      "ventasMes": "2700"
     },
     "026l8zah": {
       "unidadesPaquete": 1,
       "precioPaquete": "500",
-      "ventasMes": 0
+      "ventasMes": "570"
     },
     "p2je5ydc": {
       "unidadesPaquete": 1,
       "precioPaquete": "500",
-      "ventasMes": 0
+      "ventasMes": "570"
     }
   },
   "registroDiario": {
