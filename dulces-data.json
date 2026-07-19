@@ -271,20 +271,38 @@
   "produccionMensual": "0",
   "ventas": {
     "00dn8rjf": {
-      "unidadesPaquete": 1,
-      "precioPaquete": 0,
+      "unidadesPaquete": "3",
+      "precioPaquete": "1000",
       "ventasMes": 0
     },
     "026l8zah": {
       "unidadesPaquete": 1,
-      "precioPaquete": 0,
+      "precioPaquete": "500",
       "ventasMes": 0
     },
     "p2je5ydc": {
       "unidadesPaquete": 1,
-      "precioPaquete": 0,
+      "precioPaquete": "500",
       "ventasMes": 0
     }
   },
-  "registroDiario": {}
+  "registroDiario": {
+    "2026-07-18": {
+      "00dn8rjf": {
+        "fabricado": 92,
+        "vendido": 87,
+        "cortesia": 5
+      },
+      "026l8zah": {
+        "fabricado": 18,
+        "vendido": 18,
+        "cortesia": 0
+      },
+      "p2je5ydc": {
+        "fabricado": 18,
+        "vendido": 18,
+        "cortesia": 0
+      }
+    }
+  }
 }
