@@ -828,6 +828,27 @@ function todayStr(){
   return `${y}-${m}-${day}`;
 }
 
+function formatEta(h, m){
+  h = Number(h) || 0;
+  m = Number(m) || 0;
+  if(h === 0 && m === 0) return '0 min';
+  const partes = [];
+  if(h > 0) partes.push(`${h} h`);
+  if(m > 0) partes.push(`${m} min`);
+  return partes.join(' ');
+}
+
+function formatHorasDecimales(horasDecimal){
+  const totalMin = Math.round((horasDecimal || 0) * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if(h === 0 && m === 0) return '0 min';
+  const partes = [];
+  if(h > 0) partes.push(`${h} h`);
+  if(m > 0) partes.push(`${m} min`);
+  return partes.join(' ');
+}
+
 function formatFechaCorta(fechaStr){
   const [y,m,d] = fechaStr.split('-').map(Number);
   if(!y || !m || !d) return fechaStr;
@@ -926,6 +947,12 @@ async function loadState(){
       if(!state.registroDiario) state.registroDiario = {};
       if(!state.bloqueos) state.bloqueos = { ingredientes: false, recetas: false };
       (state.ingredientes || []).forEach(ing => { if(ing.lugarCompra === undefined) ing.lugarCompra = ''; });
+      (state.recetas || []).forEach(r => {
+        if(r.etaFabricacionHoras === undefined) r.etaFabricacionHoras = r.etaHoras || 0;
+        if(r.etaFabricacionMinutos === undefined) r.etaFabricacionMinutos = r.etaMinutos || 0;
+        if(r.etaEsperaHoras === undefined) r.etaEsperaHoras = 0;
+        if(r.etaEsperaMinutos === undefined) r.etaEsperaMinutos = 0;
+      });
       return;
     }catch(e){ /* datos corruptos, se reinicia abajo */ }
   }
@@ -1064,6 +1091,12 @@ async function restoreFromGithub(){
     if(!parsed.registroDiario) parsed.registroDiario = {};
     if(!parsed.bloqueos) parsed.bloqueos = { ingredientes: false, recetas: false };
     (parsed.ingredientes || []).forEach(ing => { if(ing.lugarCompra === undefined) ing.lugarCompra = ''; });
+    (parsed.recetas || []).forEach(r => {
+      if(r.etaFabricacionHoras === undefined) r.etaFabricacionHoras = r.etaHoras || 0;
+      if(r.etaFabricacionMinutos === undefined) r.etaFabricacionMinutos = r.etaMinutos || 0;
+      if(r.etaEsperaHoras === undefined) r.etaEsperaHoras = 0;
+      if(r.etaEsperaMinutos === undefined) r.etaEsperaMinutos = 0;
+    });
     if(!parsed.ventas) parsed.ventas = {};
     state = parsed;
     await persist();
@@ -1163,7 +1196,7 @@ function getRecetaEntradaDia(fecha, recetaId){
 
 function calcDia(fecha){
   const resumenRows = calcResumen();
-  let totFabricado = 0, totVendido = 0, totCortesia = 0, totPerdidaUnid = 0, ingreso = 0, costoProduccion = 0, perdidaDinero = 0, costoCortesias = 0;
+  let totFabricado = 0, totVendido = 0, totCortesia = 0, totPerdidaUnid = 0, ingreso = 0, costoProduccion = 0, perdidaDinero = 0, costoCortesias = 0, totHoras = 0;
   const porReceta = state.recetas.map(r => {
     const { fabricado, vendido, cortesia } = getRecetaEntradaDia(fecha, r.id);
     const resumenRow = resumenRows.find(rr => rr.receta.id === r.id) || { costoTotal: 0, precioVentaUnit: 0 };
@@ -1174,6 +1207,9 @@ function calcDia(fecha){
     const costoReceta = fabricado * costoUnit;
     const perdidaDineroReceta = perdidaUnidades * costoUnit;
     const costoCortesiaReceta = cortesia * costoUnit;
+    const unidadesPorTanda = Number(r.unidadesPorTanda) || 1;
+    const tiempoTandaHoras = (Number(r.etaFabricacionHoras)||0) + (Number(r.etaFabricacionMinutos)||0)/60;
+    const horasReceta = (fabricado / unidadesPorTanda) * tiempoTandaHoras;
     totFabricado += fabricado;
     totVendido += vendido;
     totCortesia += cortesia;
@@ -1182,10 +1218,11 @@ function calcDia(fecha){
     costoProduccion += costoReceta;
     perdidaDinero += perdidaDineroReceta;
     costoCortesias += costoCortesiaReceta;
-    return { recetaId: r.id, fabricado, vendido, cortesia, perdidaUnidades, perdidaDinero: perdidaDineroReceta, costoCortesia: costoCortesiaReceta };
+    totHoras += horasReceta;
+    return { recetaId: r.id, fabricado, vendido, cortesia, perdidaUnidades, perdidaDinero: perdidaDineroReceta, costoCortesia: costoCortesiaReceta, horasReceta };
   });
   const gananciaNeta = ingreso - costoProduccion;
-  return { porReceta, totales: { totFabricado, totVendido, totCortesia, totPerdidaUnid, ingreso, costoProduccion, perdidaDinero, costoCortesias, gananciaNeta } };
+  return { porReceta, totales: { totFabricado, totVendido, totCortesia, totPerdidaUnid, ingreso, costoProduccion, perdidaDinero, costoCortesias, gananciaNeta, totHoras } };
 }
 
 function diaTieneDatos(fecha){
@@ -1195,7 +1232,7 @@ function diaTieneDatos(fecha){
 }
 
 function sumRange(startStr, endStr){
-  const totals = { totFabricado:0, totVendido:0, totCortesia:0, totPerdidaUnid:0, ingreso:0, costoProduccion:0, perdidaDinero:0, costoCortesias:0, gananciaNeta:0 };
+  const totals = { totFabricado:0, totVendido:0, totCortesia:0, totPerdidaUnid:0, ingreso:0, costoProduccion:0, perdidaDinero:0, costoCortesias:0, gananciaNeta:0, totHoras:0 };
   let cur = startStr;
   let guard = 0;
   while(cur <= endStr && guard < 370){
@@ -1209,6 +1246,7 @@ function sumRange(startStr, endStr){
     totals.perdidaDinero += t.perdidaDinero;
     totals.costoCortesias += t.costoCortesias;
     totals.gananciaNeta += t.gananciaNeta;
+    totals.totHoras += t.totHoras;
     cur = addDaysStr(cur, 1);
     guard++;
   }
@@ -1325,6 +1363,24 @@ function renderRecetas(){
       <div class="row">
         <label>Unidades/tanda</label>
         <input type="number" step="any" data-field="unidadesPorTanda" value="${r.unidadesPorTanda}" ${dis}>
+      </div>
+      <div class="row">
+        <label>Tiempo fabricando</label>
+        <input type="number" step="1" min="0" data-field="etaFabricacionHoras" value="${r.etaFabricacionHoras || 0}" style="flex:0 0 56px;" ${dis}>
+        <span style="color:var(--ink-soft); font-size:13px;">h</span>
+        <input type="number" step="1" min="0" max="59" data-field="etaFabricacionMinutos" value="${r.etaFabricacionMinutos || 0}" style="flex:0 0 56px;" ${dis}>
+        <span style="color:var(--ink-soft); font-size:13px;">min</span>
+      </div>
+      <div class="row">
+        <label>Espera (leudado)</label>
+        <input type="number" step="1" min="0" data-field="etaEsperaHoras" value="${r.etaEsperaHoras || 0}" style="flex:0 0 56px;" ${dis}>
+        <span style="color:var(--ink-soft); font-size:13px;">h</span>
+        <input type="number" step="1" min="0" max="59" data-field="etaEsperaMinutos" value="${r.etaEsperaMinutos || 0}" style="flex:0 0 56px;" ${dis}>
+        <span style="color:var(--ink-soft); font-size:13px;">min</span>
+      </div>
+      <div class="computed eta-computed" style="text-align:left; margin:-4px 0 8px 2px;">
+        Fabricando: <b class="eta-fab">${formatEta(r.etaFabricacionHoras, r.etaFabricacionMinutos)}</b> · Esperando: <b class="eta-espera">${formatEta(r.etaEsperaHoras, r.etaEsperaMinutos)}</b><br>
+        Tiempo total hasta la entrega: <b class="eta-total">${formatHorasDecimales((Number(r.etaFabricacionHoras)||0) + (Number(r.etaFabricacionMinutos)||0)/60 + (Number(r.etaEsperaHoras)||0) + (Number(r.etaEsperaMinutos)||0)/60)}</b>
       </div>
       <div class="totals-strip strip-total-tanda">
         <span>Costo total tanda</span><b>${money(total)}</b>
@@ -1541,6 +1597,7 @@ function renderResumen(){
     return `<div class="section-title">📊 Resumen de ganancias</div><div class="empty">Crea al menos un dulce en la pestaña Recetas para ver tu resumen.</div>`;
   }
   const { totales: tp, label: periodoLabelResumen } = getPeriodoTotales(registroFecha);
+  const gananciaPorHora = tp.totHoras > 0 ? tp.gananciaNeta / tp.totHoras : null;
   const ventasRealesHtml = `
     <div class="section-title" style="margin-top:0;">📈 Ventas registradas</div>
     <div class="section-hint">Esto viene de lo que has ido anotando en la pestaña Registro, no de la estimación de abajo.</div>
@@ -1556,6 +1613,8 @@ function renderResumen(){
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Cortesías</span><b style="color:#f4d99a;">${tp.totCortesia} un · -${money(tp.costoCortesias)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Pérdida por no venta</span><b style="color:#f0a8a8;">${money(tp.perdidaDinero)}</b></div>
       <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ganancia neta</span><b class="${tp.gananciaNeta>=0?'pos-dark':'neg-dark'}" style="font-size:16px;">${money(tp.gananciaNeta)}</b></div>
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Tiempo de fabricación</span><b style="color:#fff;">${formatHorasDecimales(tp.totHoras)}</b></div>
+      <div class="totals-strip" style="border:none; padding:4px 0;"><span>Ganancia por hora</span><b class="${gananciaPorHora===null ? '' : (gananciaPorHora>=0?'pos-dark':'neg-dark')}" style="${gananciaPorHora===null ? 'color:#c9b79b; font-style:italic; font-size:13px;' : 'font-size:16px;'}">${gananciaPorHora===null ? 'Agrega el ETA en Recetas' : money(gananciaPorHora)+'/h'}</b></div>
     </div>
   `;
   const cards = rows.map(r => `
@@ -1721,6 +1780,15 @@ function softUpdateReceta(card, r){
   if(tandaStrip) tandaStrip.textContent = money(total);
   const dulceStrip = card.querySelector('.strip-costo-dulce b');
   if(dulceStrip) dulceStrip.textContent = money(costoPorDulce);
+  const etaFabEl = card.querySelector('.eta-fab');
+  if(etaFabEl) etaFabEl.textContent = formatEta(r.etaFabricacionHoras, r.etaFabricacionMinutos);
+  const etaEsperaEl = card.querySelector('.eta-espera');
+  if(etaEsperaEl) etaEsperaEl.textContent = formatEta(r.etaEsperaHoras, r.etaEsperaMinutos);
+  const etaTotalEl = card.querySelector('.eta-total');
+  if(etaTotalEl){
+    const totalHoras = (Number(r.etaFabricacionHoras)||0) + (Number(r.etaFabricacionMinutos)||0)/60 + (Number(r.etaEsperaHoras)||0) + (Number(r.etaEsperaMinutos)||0)/60;
+    etaTotalEl.textContent = formatHorasDecimales(totalHoras);
+  }
 }
 
 function softUpdateResumenCard(card, recetaId){
@@ -1888,7 +1956,7 @@ function onAction(e){
     }
   }
   else if(action === 'add-receta'){
-    const r = { id: uid(), nombre: 'Nuevo dulce', unidadesPorTanda: 1, items: [] };
+    const r = { id: uid(), nombre: 'Nuevo dulce', unidadesPorTanda: 1, items: [], etaFabricacionHoras: 0, etaFabricacionMinutos: 0, etaEsperaHoras: 0, etaEsperaMinutos: 0 };
     state.recetas.push(r);
     state.ventas[r.id] = { unidadesPaquete: 1, precioPaquete: 0, ventasMes: 0 };
   }
