@@ -151,24 +151,140 @@
           "cantidadUsada": "300"
         }
       ]
+    },
+    {
+      "id": "026l8zah",
+      "nombre": "Berlin Manjar",
+      "unidadesPorTanda": "18",
+      "items": [
+        {
+          "id": "a39p8hd4",
+          "ingredienteId": "nfqecha8",
+          "cantidadUsada": "110"
+        },
+        {
+          "id": "fbwow4q0",
+          "ingredienteId": "929onaah",
+          "cantidadUsada": "510"
+        },
+        {
+          "id": "vonvgtsw",
+          "ingredienteId": "wt3ezpv6",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "orn4uxd1",
+          "ingredienteId": "4p2py1ge",
+          "cantidadUsada": "0.5"
+        },
+        {
+          "id": "63nekr5w",
+          "ingredienteId": "d3qr73i6",
+          "cantidadUsada": "35"
+        },
+        {
+          "id": "w4qux5jm",
+          "ingredienteId": "6nkpn15c",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "5in7zkbt",
+          "ingredienteId": "cf18af3r",
+          "cantidadUsada": "50"
+        },
+        {
+          "id": "mg1kvk1n",
+          "ingredienteId": "axwel3ok",
+          "cantidadUsada": "540"
+        },
+        {
+          "id": "lxdj7bn8",
+          "ingredienteId": "hjcwbwsr",
+          "cantidadUsada": "30"
+        },
+        {
+          "id": "k1cgke9m",
+          "ingredienteId": "ghuzm2sl",
+          "cantidadUsada": "15"
+        }
+      ]
+    },
+    {
+      "id": "p2je5ydc",
+      "nombre": "Berlin Pastelera",
+      "unidadesPorTanda": "18",
+      "items": [
+        {
+          "id": "vzqgp9n6",
+          "ingredienteId": "nfqecha8",
+          "cantidadUsada": "110"
+        },
+        {
+          "id": "ptc6foqe",
+          "ingredienteId": "929onaah",
+          "cantidadUsada": "510"
+        },
+        {
+          "id": "7rxlz1jt",
+          "ingredienteId": "wt3ezpv6",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "wwut7hzt",
+          "ingredienteId": "4p2py1ge",
+          "cantidadUsada": "0.5"
+        },
+        {
+          "id": "n24buese",
+          "ingredienteId": "d3qr73i6",
+          "cantidadUsada": "35"
+        },
+        {
+          "id": "l988pb70",
+          "ingredienteId": "6nkpn15c",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "prhtn6oa",
+          "ingredienteId": "cf18af3r",
+          "cantidadUsada": "50"
+        },
+        {
+          "id": "lm7azpdt",
+          "ingredienteId": "pwwviz7f",
+          "cantidadUsada": "200"
+        },
+        {
+          "id": "7b98jevo",
+          "ingredienteId": "hjcwbwsr",
+          "cantidadUsada": "30"
+        },
+        {
+          "id": "xr8c2ze1",
+          "ingredienteId": "ghuzm2sl",
+          "cantidadUsada": "15"
+        }
+      ]
     }
   ],
   "gastos": [],
   "produccionMensual": "0",
   "ventas": {
     "00dn8rjf": {
-      "unidadesPaquete": "3",
-      "precioPaquete": "1000",
-      "ventasMes": "87"
+      "unidadesPaquete": 1,
+      "precioPaquete": 0,
+      "ventasMes": 0
+    },
+    "026l8zah": {
+      "unidadesPaquete": 1,
+      "precioPaquete": 0,
+      "ventasMes": 0
+    },
+    "p2je5ydc": {
+      "unidadesPaquete": 1,
+      "precioPaquete": 0,
+      "ventasMes": 0
     }
   },
-  "registroDiario": {
-    "2026-07-18": {
-      "00dn8rjf": {
-        "fabricado": 92,
-        "vendido": 87,
-        "cortesia": 5
-      }
-    }
-  }
+  "registroDiario": {}
 }
