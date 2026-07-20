@@ -1661,6 +1661,7 @@ function renderResumen(){
       <button class="periodo-btn ${resumenPeriodo==='semana'?'active':''}" data-action="set-periodo" data-periodo="semana">Semana</button>
       <button class="periodo-btn ${resumenPeriodo==='mes'?'active':''}" data-action="set-periodo" data-periodo="mes">Mes</button>
     </div>
+    ${resumenPeriodo === 'dia' ? renderCalendario(registroFecha) : ''}
     <div class="card" style="background:var(--ink); color:#fff; margin-top:8px; margin-bottom:22px;">
       <div class="totals-strip" style="border:none; padding:2px 0 8px;"><span style="font-style:italic; color:#d8c4ab;">${periodoLabelResumen}</span><span></span></div>
       <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Vendido</span><b style="color:#fff;">${tp.totVendido} un</b></div>
