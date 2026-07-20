@@ -461,11 +461,23 @@
         "vendido": 18,
         "cortesia": 0
       }
+    },
+    "2026-07-19": {
+      "026l8zah": {
+        "fabricado": 19,
+        "vendido": 19,
+        "cortesia": 0
+      },
+      "p2je5ydc": {
+        "fabricado": 18,
+        "vendido": 17,
+        "cortesia": 1
+      }
     }
   },
   "bloqueos": {
     "ingredientes": true,
-    "recetas": false
+    "recetas": true
   },
-  "ocultarGanancia": true
+  "ocultarGanancia": false
 }
