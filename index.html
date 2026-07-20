@@ -482,6 +482,24 @@
     background: var(--gold);
   }
   .cal-day.selected .cal-dot{ background: #fff; }
+  .semana-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-top:10px;
+  }
+  .semana-item{
+    background: var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:9px 12px;
+    font-size:13px;
+    color:var(--ink);
+    text-align:left;
+    cursor:pointer;
+  }
+  .semana-item:active{ background: rgba(43,24,16,0.06); }
+  .semana-item.selected{ background:var(--cherry); color:#fff; border-color:var(--cherry); font-weight:600; }
   .periodo-toggle{
     display: flex;
     gap: 6px;
@@ -942,6 +960,19 @@ function getMonthMatrix(year, monthIndex0){
   return cells;
 }
 
+function getSemanasDelMes(year, monthIndex0){
+  const matrix = getMonthMatrix(year, monthIndex0);
+  const semanas = [];
+  for(let i=0; i<matrix.length; i+=7){
+    const row = matrix.slice(i, i+7);
+    const anchor = row.find(c => c !== null);
+    if(!anchor) continue;
+    const { start, end } = getWeekRange(anchor);
+    if(!semanas.some(s => s.start === start)) semanas.push({ start, end });
+  }
+  return semanas;
+}
+
 let state = null;
 let activeTab = 'ingredientes';
 let registroFecha = todayStr();
@@ -949,6 +980,7 @@ let resumenPeriodo = 'dia';
 let calYear = null;
 let calMonth = null;
 let calendarOpen = false;
+let semanaPickerOpen = false;
 let ventaFormOpen = false;
 let ventaFormRecetaId = null;
 let ventaFormConfirmMsg = null;
@@ -1307,6 +1339,60 @@ function sumRange(startStr, endStr){
   return totals;
 }
 
+function renderPeriodoNav(fecha){
+  if(resumenPeriodo === 'semana'){
+    if(calYear === null){
+      const d0 = parseDateStr(fecha);
+      calYear = d0.getFullYear();
+      calMonth = d0.getMonth();
+    }
+    const { start, end } = getWeekRange(fecha);
+    let listHtml = '';
+    if(semanaPickerOpen){
+      const semanas = getSemanasDelMes(calYear, calMonth);
+      const tituloMes = new Date(calYear, calMonth, 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+      const tituloMesCap = tituloMes.charAt(0).toUpperCase() + tituloMes.slice(1);
+      listHtml = `
+        <div class="cal-header" style="margin-top:10px;">
+          <button data-action="cal-prev-month-semana" title="Mes anterior">‹</button>
+          <span class="cal-title">${tituloMesCap}</span>
+          <button data-action="cal-next-month-semana" title="Mes siguiente">›</button>
+        </div>
+        <div class="semana-list">
+          ${semanas.map(s => {
+            const selected = s.start === start;
+            return `<button class="semana-item ${selected ? 'selected' : ''}" data-action="ver-semana" data-fecha="${s.start}">${formatFechaCorta(s.start)} – ${formatFechaCorta(s.end)}</button>`;
+          }).join('')}
+        </div>
+      `;
+    }
+    return `
+      <div class="cal-box">
+        <button class="cal-toggle-row" data-action="toggle-semana-picker">
+          <span>📅 Semana del ${formatFechaCorta(start)} al ${formatFechaCorta(end)}</span>
+          <span class="cal-toggle-icon">${semanaPickerOpen ? '▴' : '▾'}</span>
+        </button>
+        ${listHtml}
+      </div>
+    `;
+  }
+  if(resumenPeriodo === 'mes'){
+    const d = parseDateStr(fecha);
+    let label = d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+    label = label.charAt(0).toUpperCase() + label.slice(1);
+    return `
+      <div class="cal-box">
+        <div class="cal-header" style="margin-top:0;">
+          <button data-action="nav-mes-prev" title="Mes anterior">‹</button>
+          <span class="cal-title">${label}</span>
+          <button data-action="nav-mes-next" title="Mes siguiente">›</button>
+        </div>
+      </div>
+    `;
+  }
+  return renderCalendario(fecha);
+}
+
 function getPeriodoTotales(fecha){
   if(resumenPeriodo === 'semana'){
     const { start, end } = getWeekRange(fecha);
@@ -1661,7 +1747,7 @@ function renderResumen(){
       <button class="periodo-btn ${resumenPeriodo==='semana'?'active':''}" data-action="set-periodo" data-periodo="semana">Semana</button>
       <button class="periodo-btn ${resumenPeriodo==='mes'?'active':''}" data-action="set-periodo" data-periodo="mes">Mes</button>
     </div>
-    ${resumenPeriodo === 'dia' ? renderCalendario(registroFecha) : ''}
+    ${renderPeriodoNav(registroFecha)}
     <div class="card" style="background:var(--ink); color:#fff; margin-top:8px; margin-bottom:22px;">
       <div class="totals-strip" style="border:none; padding:2px 0 8px;"><span style="font-style:italic; color:#d8c4ab;">${periodoLabelResumen}</span><span></span></div>
       <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Vendido</span><b style="color:#fff;">${tp.totVendido} un</b></div>
@@ -2079,6 +2165,38 @@ function onAction(e){
   else if(action === 'delete-gasto'){
     const id = btn.closest('[data-kind]').dataset.id;
     state.gastos = state.gastos.filter(g => g.id !== id);
+  }
+  else if(action === 'toggle-semana-picker'){
+    semanaPickerOpen = !semanaPickerOpen;
+    render();
+    return;
+  }
+  else if(action === 'cal-prev-month-semana'){
+    calMonth--;
+    if(calMonth < 0){ calMonth = 11; calYear--; }
+    render();
+    return;
+  }
+  else if(action === 'cal-next-month-semana'){
+    calMonth++;
+    if(calMonth > 11){ calMonth = 0; calYear++; }
+    render();
+    return;
+  }
+  else if(action === 'ver-semana'){
+    registroFecha = btn.dataset.fecha;
+  }
+  else if(action === 'nav-mes-prev'){
+    const d0 = parseDateStr(registroFecha);
+    registroFecha = dateToStr(new Date(d0.getFullYear(), d0.getMonth() - 1, 1));
+    calYear = d0.getFullYear(); calMonth = d0.getMonth() - 1;
+    if(calMonth < 0){ calMonth = 11; calYear -= 1; }
+  }
+  else if(action === 'nav-mes-next'){
+    const d0 = parseDateStr(registroFecha);
+    registroFecha = dateToStr(new Date(d0.getFullYear(), d0.getMonth() + 1, 1));
+    calYear = d0.getFullYear(); calMonth = d0.getMonth() + 1;
+    if(calMonth > 11){ calMonth = 0; calYear += 1; }
   }
   else if(action === 'ver-dia'){
     registroFecha = btn.dataset.fecha;
