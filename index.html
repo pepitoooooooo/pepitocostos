@@ -272,6 +272,18 @@
     border-radius: 8px;
   }
   .del-btn:active{ background: rgba(201,54,79,0.12); }
+  .dup-btn{
+    border:none;
+    background: transparent;
+    color: var(--gold);
+    font-size: 17px;
+    cursor:pointer;
+    line-height:1;
+    padding: 4px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .dup-btn:active{ background: rgba(201,151,58,0.15); }
   .row{
     display:flex;
     align-items:center;
@@ -1398,6 +1410,7 @@ function renderRecetas(){
       <div class="stamp-badge">${money(costoPorDulce)}/un</div>
       <div class="card-head">
         <input class="name-input" data-field="nombre" value="${escapeAttr(r.nombre)}" placeholder="Nombre del dulce" ${dis}>
+        <button class="dup-btn" data-action="duplicate-receta" title="Duplicar receta">⧉</button>
         ${locked ? '' : `<button class="del-btn" data-action="delete-receta">✕</button>`}
       </div>
       ${itemsHtml || '<div class="empty" style="padding:10px;">Sin ingredientes aún.</div>'}
@@ -2001,6 +2014,27 @@ function onAction(e){
     const r = { id: uid(), nombre: 'Nuevo dulce', unidadesPorTanda: 1, items: [], etaFabricacionHoras: 0, etaFabricacionMinutos: 0, etaEsperaHoras: 0, etaEsperaMinutos: 0 };
     state.recetas.push(r);
     state.ventas[r.id] = { unidadesPaquete: 1, precioPaquete: 0, ventasMes: 0 };
+  }
+  else if(action === 'duplicate-receta'){
+    const card = btn.closest('[data-kind]');
+    const id = card.dataset.id;
+    const idx = state.recetas.findIndex(r => r.id === id);
+    const original = state.recetas[idx];
+    if(original){
+      const nombre = original.nombre || 'esta receta';
+      if(confirm(`¿Duplicar "${nombre}"? Se creará una copia completa con todos sus ingredientes y tiempos.`)){
+        const copia = JSON.parse(JSON.stringify(original));
+        copia.id = uid();
+        copia.nombre = `${original.nombre || 'Receta'} (copia)`;
+        copia.items = (copia.items || []).map(it => ({ ...it, id: uid() }));
+        state.recetas.splice(idx + 1, 0, copia);
+        state.ventas[copia.id] = state.ventas[id]
+          ? { ...state.ventas[id] }
+          : { unidadesPaquete: 1, precioPaquete: 0, ventasMes: 0 };
+      } else {
+        return;
+      }
+    }
   }
   else if(action === 'delete-receta'){
     const card = btn.closest('[data-kind]');
