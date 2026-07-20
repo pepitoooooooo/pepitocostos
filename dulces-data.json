@@ -164,7 +164,11 @@
           "ingredienteId": "dsr822lr",
           "cantidadUsada": "300"
         }
-      ]
+      ],
+      "etaFabricacionHoras": "1",
+      "etaFabricacionMinutos": "30",
+      "etaEsperaHoras": "2",
+      "etaEsperaMinutos": 0
     },
     {
       "id": "026l8zah",
@@ -221,7 +225,72 @@
           "ingredienteId": "ghuzm2sl",
           "cantidadUsada": "15"
         }
-      ]
+      ],
+      "etaFabricacionHoras": "",
+      "etaFabricacionMinutos": "25",
+      "etaEsperaHoras": "3",
+      "etaEsperaMinutos": 0
+    },
+    {
+      "id": "2d2vefgr",
+      "nombre": "Berlin Manjar BARATO",
+      "unidadesPorTanda": "18",
+      "items": [
+        {
+          "id": "9l9w14sk",
+          "ingredienteId": "nfqecha8",
+          "cantidadUsada": "110"
+        },
+        {
+          "id": "ikh4wrvk",
+          "ingredienteId": "929onaah",
+          "cantidadUsada": "510"
+        },
+        {
+          "id": "m26oecl0",
+          "ingredienteId": "wt3ezpv6",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "0au27nxh",
+          "ingredienteId": "4p2py1ge",
+          "cantidadUsada": "0.5"
+        },
+        {
+          "id": "tc2hd1ft",
+          "ingredienteId": "d3qr73i6",
+          "cantidadUsada": "35"
+        },
+        {
+          "id": "xfa4vkrp",
+          "ingredienteId": "6nkpn15c",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "htiyknq7",
+          "ingredienteId": "cf18af3r",
+          "cantidadUsada": "50"
+        },
+        {
+          "id": "jfemi8ag",
+          "ingredienteId": "axwel3ok",
+          "cantidadUsada": "540"
+        },
+        {
+          "id": "7uernc1d",
+          "ingredienteId": "hjcwbwsr",
+          "cantidadUsada": "30"
+        },
+        {
+          "id": "akvh2hht",
+          "ingredienteId": "ghuzm2sl",
+          "cantidadUsada": "15"
+        }
+      ],
+      "etaFabricacionHoras": "",
+      "etaFabricacionMinutos": "25",
+      "etaEsperaHoras": "3",
+      "etaEsperaMinutos": 0
     },
     {
       "id": "p2je5ydc",
@@ -278,7 +347,72 @@
           "ingredienteId": "ghuzm2sl",
           "cantidadUsada": "15"
         }
-      ]
+      ],
+      "etaFabricacionHoras": "0",
+      "etaFabricacionMinutos": "25",
+      "etaEsperaHoras": "3",
+      "etaEsperaMinutos": 0
+    },
+    {
+      "id": "a7k4nkel",
+      "nombre": "Berlin Pastelera BARATO",
+      "unidadesPorTanda": "18",
+      "items": [
+        {
+          "id": "xypsg7f8",
+          "ingredienteId": "nfqecha8",
+          "cantidadUsada": "110"
+        },
+        {
+          "id": "mggbiqsn",
+          "ingredienteId": "929onaah",
+          "cantidadUsada": "510"
+        },
+        {
+          "id": "s93da8p2",
+          "ingredienteId": "wt3ezpv6",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "bo2fty2u",
+          "ingredienteId": "4p2py1ge",
+          "cantidadUsada": "0.5"
+        },
+        {
+          "id": "e5eln5tk",
+          "ingredienteId": "d3qr73i6",
+          "cantidadUsada": "35"
+        },
+        {
+          "id": "3fd0ccq0",
+          "ingredienteId": "6nkpn15c",
+          "cantidadUsada": "20"
+        },
+        {
+          "id": "m3gtu01a",
+          "ingredienteId": "cf18af3r",
+          "cantidadUsada": "50"
+        },
+        {
+          "id": "dnz0s355",
+          "ingredienteId": "pwwviz7f",
+          "cantidadUsada": "200"
+        },
+        {
+          "id": "58vxlwpq",
+          "ingredienteId": "hjcwbwsr",
+          "cantidadUsada": "30"
+        },
+        {
+          "id": "12d8roo6",
+          "ingredienteId": "ghuzm2sl",
+          "cantidadUsada": "15"
+        }
+      ],
+      "etaFabricacionHoras": "0",
+      "etaFabricacionMinutos": "25",
+      "etaEsperaHoras": "3",
+      "etaEsperaMinutos": 0
     }
   ],
   "gastos": [],
@@ -297,6 +431,16 @@
     "p2je5ydc": {
       "unidadesPaquete": 1,
       "precioPaquete": "500",
+      "ventasMes": "570"
+    },
+    "2d2vefgr": {
+      "unidadesPaquete": 1,
+      "precioPaquete": "400",
+      "ventasMes": "570"
+    },
+    "a7k4nkel": {
+      "unidadesPaquete": 1,
+      "precioPaquete": "400",
       "ventasMes": "570"
     }
   },
@@ -322,5 +466,6 @@
   "bloqueos": {
     "ingredientes": true,
     "recetas": false
-  }
+  },
+  "ocultarGanancia": true
 }
