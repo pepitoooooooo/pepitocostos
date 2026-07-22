@@ -13,7 +13,7 @@
       "nombre": "Harina",
       "cantidad": "25",
       "unidad": "kg",
-      "precio": "20140",
+      "precio": "19990",
       "lugarCompra": "Molino Fuentes"
     },
     {
@@ -69,7 +69,7 @@
       "nombre": "Merengue",
       "cantidad": 600,
       "unidad": "g",
-      "precio": "4000",
+      "precio": "3250",
       "lugarCompra": "Chocolate Merken (Vega)"
     },
     {
@@ -479,5 +479,5 @@
     "ingredientes": true,
     "recetas": true
   },
-  "ocultarGanancia": false
+  "ocultarGanancia": true
 }
