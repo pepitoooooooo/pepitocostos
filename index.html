@@ -855,6 +855,7 @@ function defaultState(){
     produccionMensual: 300,
     ventas: {},
     inventario: {},
+    lotesInventario: {},
     registroDiario: {},
     bloqueos: { ingredientes: false, recetas: false, inventario: false },
     movimientosInventario: [],
@@ -1148,6 +1149,24 @@ async function syncToGithub(){
   }
 }
 
+// Replica el costo por dulce que existía ANTES del costeo FIFO (solo con el
+// "Precio compra" de Ingredientes). Se usa una única vez, al migrar datos
+// viejos, para no mover retroactivamente la ganancia ya mostrada de días
+// pasados que no tienen `costoIngredientes` guardado.
+function estimarCostoPorDulceLegacy(ingredientesList, receta){
+  let total = 0;
+  (receta.items || []).forEach(item => {
+    const ing = (ingredientesList || []).find(i => i.id === item.ingredienteId);
+    if(!ing) return;
+    const f = UNIT_FACTORS[ing.unidad] || { factor: 1 };
+    const cantidadBase = (Number(ing.cantidad) || 0) * f.factor;
+    const costoBase = cantidadBase ? (Number(ing.precio) || 0) / cantidadBase : 0;
+    total += costoBase * (Number(item.cantidadUsada) || 0);
+  });
+  const unidades = Number(receta.unidadesPorTanda) || 0;
+  return unidades ? total / unidades : 0;
+}
+
 function normalizeRestoredState(parsed){
   if(!parsed.registroDiario) parsed.registroDiario = {};
   if(!parsed.inventario) parsed.inventario = {};
@@ -1163,6 +1182,43 @@ function normalizeRestoredState(parsed){
     if(r.etaEsperaMinutos === undefined) r.etaEsperaMinutos = 0;
   });
   if(!parsed.ventas) parsed.ventas = {};
+
+  // Migración única a costeo FIFO por lotes (se detecta por la ausencia de
+  // `lotesInventario`; una vez migrado, no se repite en cargas futuras).
+  if(!parsed.lotesInventario){
+    parsed.lotesInventario = {};
+    // 1) El stock que ya tenías (sin costo por lote) se convierte en un lote
+    //    inicial, valorizado al "Precio compra" de ese ingrediente ahora mismo
+    //    — la mejor referencia de costo que existía antes de este cambio.
+    (parsed.ingredientes || []).forEach(ing => {
+      const cantidadExistente = Number(parsed.inventario ? parsed.inventario[ing.id] : 0) || 0;
+      if(Math.abs(cantidadExistente) > 1e-9){
+        const f = UNIT_FACTORS[ing.unidad] || { factor: 1 };
+        const cantidadBase = (Number(ing.cantidad) || 0) * f.factor;
+        const costoUnitario = cantidadBase ? (Number(ing.precio) || 0) / cantidadBase : 0;
+        parsed.lotesInventario[ing.id] = [{ id: uid(), cantidadRestante: cantidadExistente, costoUnitario, fecha: todayStr(), nota: 'Lote inicial (migración desde stock sin costo por lote)' }];
+      }
+    });
+    // 2) Los registros de producción ya guardados no tienen `costoIngredientes`
+    //    (campo nuevo). Se les asigna el costo estimado de ese momento (con el
+    //    Precio compra) para no alterar retroactivamente la ganancia neta que
+    //    ya se mostraba en días pasados. Desde acá en adelante, toda
+    //    producción nueva usa el costo FIFO real.
+    Object.keys(parsed.registroDiario).forEach(fecha => {
+      const dia = parsed.registroDiario[fecha];
+      Object.keys(dia).forEach(recetaId => {
+        const entry = dia[recetaId];
+        if(entry.costoIngredientes === undefined){
+          const receta = (parsed.recetas || []).find(r => r.id === recetaId);
+          const costoPorDulceLegacy = receta ? estimarCostoPorDulceLegacy(parsed.ingredientes, receta) : 0;
+          const fabricado = Number(entry.fabricado) || 0;
+          entry.costoIngredientes = fabricado * costoPorDulceLegacy;
+          entry.consumoDetalle = {};
+        }
+      });
+    });
+  }
+
   return parsed;
 }
 
@@ -1295,7 +1351,7 @@ function calcReceta(receta){
   const itemCostos = receta.items.map(item => {
     const ing = state.ingredientes.find(i => i.id === item.ingredienteId);
     if(!ing) return { costo: 0, base: '' };
-    const { costo, base } = costoPorUnidadBase(ing);
+    const { costo, base } = costoActualIngrediente(ing);
     const c = costo * (Number(item.cantidadUsada) || 0);
     total += c;
     return { costo: c, base };
@@ -1305,7 +1361,26 @@ function calcReceta(receta){
   return { total, itemCostos, costoPorDulce };
 }
 
-// ---------- Inventario: descuento automático por producción ----------
+// ---------- Inventario: lotes FIFO + costeo real ----------
+// Costo "actual" de un ingrediente para Recetas/Resumen: el costo del lote
+// más antiguo con stock (el que se usaría primero, FIFO). Sin ningún lote
+// con stock, se cae al "Precio compra" de Ingredientes como respaldo.
+function costoActualIngrediente(ing){
+  const lotes = (state.lotesInventario && state.lotesInventario[ing.id]) || [];
+  const proximoLote = lotes.find(l => (Number(l.cantidadRestante) || 0) > 1e-9);
+  if(proximoLote){
+    return { costo: Number(proximoLote.costoUnitario) || 0, base: costoPorUnidadBase(ing).base };
+  }
+  return costoPorUnidadBase(ing);
+}
+
+// Stock actual = suma de lo que queda en todos los lotes (puede incluir un
+// lote "de déficit" con cantidad negativa si se consumió más de lo que había).
+function stockActual(ingredienteId){
+  const lotes = (state.lotesInventario && state.lotesInventario[ingredienteId]) || [];
+  return lotes.reduce((s, l) => s + (Number(l.cantidadRestante) || 0), 0);
+}
+
 // Cuánto se gasta de cada ingrediente por CADA unidad fabricada (no por tanda).
 function consumoRecetaPorUnidad(receta){
   const unidadesPorTanda = Number(receta.unidadesPorTanda) || 0;
@@ -1316,19 +1391,108 @@ function consumoRecetaPorUnidad(receta){
   }));
 }
 
-// Ajusta el inventario según un cambio en "fabricado" de una receta.
-// deltaFabricado positivo = se fabricó más → descuenta stock.
-// deltaFabricado negativo = se corrigió a la baja o se borró un registro → devuelve stock.
-function ajustarInventarioPorFabricado(recetaId, deltaFabricado){
-  if(!deltaFabricado) return;
-  const receta = state.recetas.find(r => r.id === recetaId);
-  if(!receta) return;
-  if(!state.inventario) state.inventario = {};
-  consumoRecetaPorUnidad(receta).forEach(({ ingredienteId, cantidadPorUnidad }) => {
-    if(!ingredienteId || !cantidadPorUnidad) return;
-    const actual = Number(state.inventario[ingredienteId]) || 0;
-    state.inventario[ingredienteId] = actual - (cantidadPorUnidad * deltaFabricado);
-  });
+// Agrega un lote nuevo (una compra) al final de la cola FIFO de un
+// ingrediente. Devuelve el id del lote, para poder deshacer ESA compra puntual.
+function agregarLoteInventario(ingredienteId, cantidad, costoTotal, fecha, nota){
+  if(!state.lotesInventario) state.lotesInventario = {};
+  if(!state.lotesInventario[ingredienteId]) state.lotesInventario[ingredienteId] = [];
+  const costoUnitario = cantidad ? (Number(costoTotal) || 0) / cantidad : 0;
+  const lote = { id: uid(), cantidadRestante: cantidad, costoUnitario, fecha, nota };
+  state.lotesInventario[ingredienteId].push(lote);
+  return lote.id;
+}
+
+// Consume `cantidad` de un ingrediente en orden FIFO (el lote más antiguo
+// primero). Devuelve el costo REAL de lo consumido, según el costo de cada
+// lote de donde salió. Si el stock no alcanza, la diferencia se valora al
+// costo de respaldo (Precio compra de Ingredientes) y queda un lote de
+// "déficit" con cantidad negativa, para que el stock total siga mostrando el
+// faltante en rojo (mismo comportamiento que antes de los lotes).
+function consumirLoteFIFO(ingredienteId, cantidad){
+  if(!cantidad || cantidad <= 1e-9) return 0;
+  if(!state.lotesInventario) state.lotesInventario = {};
+  if(!state.lotesInventario[ingredienteId]) state.lotesInventario[ingredienteId] = [];
+  const lotes = state.lotesInventario[ingredienteId];
+  let restante = cantidad;
+  let costoTotal = 0;
+  for(const lote of lotes){
+    if(restante <= 1e-9) break;
+    const disponible = Number(lote.cantidadRestante) || 0;
+    if(disponible <= 1e-9) continue; // agotado o es el lote de déficit, no se toca
+    const usar = Math.min(disponible, restante);
+    lote.cantidadRestante = disponible - usar;
+    costoTotal += usar * (Number(lote.costoUnitario) || 0);
+    restante -= usar;
+  }
+  if(restante > 1e-9){
+    const ing = state.ingredientes.find(i => i.id === ingredienteId);
+    const costoRespaldo = ing ? costoPorUnidadBase(ing).costo : 0;
+    costoTotal += restante * costoRespaldo;
+    const faltanteExistente = lotes.find(l => l.esFaltante);
+    if(faltanteExistente){
+      faltanteExistente.cantidadRestante = (Number(faltanteExistente.cantidadRestante) || 0) - restante;
+    } else {
+      lotes.push({ id: uid(), cantidadRestante: -restante, costoUnitario: costoRespaldo, fecha: todayStr(), nota: 'Déficit (consumo mayor al stock disponible)', esFaltante: true });
+    }
+  }
+  state.lotesInventario[ingredienteId] = lotes.filter(l => Math.abs(Number(l.cantidadRestante) || 0) > 1e-9);
+  return costoTotal;
+}
+
+// Devuelve stock a la cola FIFO, al FRENTE (tenía prioridad antes que
+// cualquier compra nueva). Se usa al corregir a la baja o borrar producción
+// ya registrada, y al deshacer una merma manual.
+function devolverLoteFIFO(ingredienteId, cantidad, costoTotal){
+  if(!cantidad || cantidad <= 1e-9) return;
+  if(!state.lotesInventario) state.lotesInventario = {};
+  if(!state.lotesInventario[ingredienteId]) state.lotesInventario[ingredienteId] = [];
+  const costoUnitario = cantidad ? (Number(costoTotal) || 0) / cantidad : 0;
+  state.lotesInventario[ingredienteId].unshift({ id: uid(), cantidadRestante: cantidad, costoUnitario, fecha: todayStr(), nota: 'Devuelto (corrección o eliminación de producción)' });
+}
+
+// Ajusta inventario y costo real de una entrada de registroDiario según un
+// cambio en su "fabricado". `entry` es el objeto vivo de
+// state.registroDiario[fecha][recetaId] (se muta directamente, incluyendo
+// `entry.fabricado`, que queda en `fabricadoNuevo` al terminar).
+// - Sube: consume FIFO la diferencia y SUMA su costo real a
+//   entry.costoIngredientes / entry.consumoDetalle.
+// - Baja (corrección o borrado, fabricadoNuevo=0): devuelve
+//   proporcionalmente lo que ya no corresponde, al mismo costo con que se
+//   había consumido (no se "reinventa" un costo nuevo al corregir).
+function ajustarInventarioPorFabricado(receta, entry, fabricadoNuevo){
+  const fabricadoAnterior = Number(entry.fabricado) || 0;
+  if(!entry.consumoDetalle) entry.consumoDetalle = {};
+  if(entry.costoIngredientes === undefined) entry.costoIngredientes = 0;
+  const delta = fabricadoNuevo - fabricadoAnterior;
+  if(Math.abs(delta) < 1e-9){ entry.fabricado = fabricadoNuevo; return; }
+
+  if(delta > 0){
+    consumoRecetaPorUnidad(receta).forEach(({ ingredienteId, cantidadPorUnidad }) => {
+      if(!ingredienteId || !cantidadPorUnidad) return;
+      const cantidadAConsumir = cantidadPorUnidad * delta;
+      const costoConsumido = consumirLoteFIFO(ingredienteId, cantidadAConsumir);
+      if(!entry.consumoDetalle[ingredienteId]) entry.consumoDetalle[ingredienteId] = { cantidad: 0, costo: 0 };
+      entry.consumoDetalle[ingredienteId].cantidad += cantidadAConsumir;
+      entry.consumoDetalle[ingredienteId].costo += costoConsumido;
+      entry.costoIngredientes += costoConsumido;
+    });
+  } else {
+    const ratio = fabricadoAnterior > 1e-9 ? Math.max(0, fabricadoNuevo) / fabricadoAnterior : 0;
+    Object.keys(entry.consumoDetalle).forEach(ingredienteId => {
+      const det = entry.consumoDetalle[ingredienteId];
+      const cantidadQueQueda = det.cantidad * ratio;
+      const costoQueQueda = det.costo * ratio;
+      const cantidadADevolver = det.cantidad - cantidadQueQueda;
+      const costoADevolver = det.costo - costoQueQueda;
+      if(cantidadADevolver > 1e-9){
+        devolverLoteFIFO(ingredienteId, cantidadADevolver, costoADevolver);
+        entry.costoIngredientes -= costoADevolver;
+      }
+      det.cantidad = cantidadQueQueda;
+      det.costo = costoQueQueda;
+    });
+  }
+  entry.fabricado = fabricadoNuevo;
 }
 
 function calcGastos(){
@@ -1390,20 +1554,26 @@ function getRecetaEntradaDia(fecha, recetaId){
     vendido: e ? Number(e.vendido)||0 : 0,
     cortesia: e ? Number(e.cortesia)||0 : 0,
     completado: e ? !!e.completado : false,
+    costoIngredientes: e ? Number(e.costoIngredientes)||0 : 0,
   };
 }
 
 function calcDia(fecha){
   const resumenRows = calcResumen();
+  const { porDulce: gastoFijoPorDulce } = calcGastos();
   let totFabricado = 0, totVendido = 0, totCortesia = 0, totPerdidaUnid = 0, ingreso = 0, costoProduccion = 0, perdidaDinero = 0, costoCortesias = 0, totHoras = 0;
   const porReceta = state.recetas.map(r => {
-    const { fabricado, vendido, cortesia } = getRecetaEntradaDia(fecha, r.id);
-    const resumenRow = resumenRows.find(rr => rr.receta.id === r.id) || { costoTotal: 0, precioVentaUnit: 0 };
-    const costoUnit = resumenRow.costoTotal || 0;
+    const { fabricado, vendido, cortesia, costoIngredientes } = getRecetaEntradaDia(fecha, r.id);
+    const resumenRow = resumenRows.find(rr => rr.receta.id === r.id) || { precioVentaUnit: 0 };
     const precioUnit = resumenRow.precioVentaUnit || 0;
+    // Costo real: lo que de verdad costaron los ingredientes consumidos (FIFO,
+    // guardado al momento de registrar la producción) + el gasto fijo
+    // prorrateado ACTUAL (los gastos fijos no son inventario, así que ese
+    // componente sí usa la estimación vigente, no una "congelada").
+    const costoUnit = fabricado > 0 ? (costoIngredientes / fabricado) + gastoFijoPorDulce : gastoFijoPorDulce;
     const perdidaUnidades = Math.max(0, fabricado - vendido - cortesia);
     const ingresoReceta = vendido * precioUnit;
-    const costoReceta = fabricado * costoUnit;
+    const costoReceta = costoIngredientes + (fabricado * gastoFijoPorDulce);
     const perdidaDineroReceta = perdidaUnidades * costoUnit;
     const costoCortesiaReceta = cortesia * costoUnit;
     const unidadesPorTanda = Number(r.unidadesPorTanda) || 1;
@@ -1673,7 +1843,7 @@ function renderInventario(){
     ${(inventarioFormOpen && !locked) ? `
     <div class="card" style="margin-bottom:18px;">
       <div class="section-hint" style="margin:0 0 10px;">
-        Registra un movimiento: positivo si compraste o repusiste, negativo si hubo una merma o corrección a la baja. Se suma (o resta) al stock actual — nunca se reemplaza el número directamente.
+        Positivo si compraste o repusiste (crea un lote nuevo con su propio costo). Negativo si hubo una merma o corrección a la baja (descuenta del lote más antiguo, igual que la producción). Nunca se reemplaza el stock directamente.
       </div>
       <div class="row" style="margin-bottom:6px;">
         <label style="width:64px;">Ingrediente</label>
@@ -1683,6 +1853,10 @@ function renderInventario(){
         <label style="width:64px;">Cantidad</label>
         <input type="number" step="any" id="inventario-form-cantidad" placeholder="Ej: 5000 o -200">
         <span class="unit-tag">${baseSeleccionado}</span>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <label style="width:64px;">Costo total</label>
+        <input type="number" step="any" id="inventario-form-costo" placeholder="Solo si es una compra">
       </div>
       <div class="row" style="margin-bottom:0;">
         <label style="width:64px;">Nota</label>
@@ -1695,7 +1869,8 @@ function renderInventario(){
 
   const cards = state.ingredientes.map(ing => {
     const { base } = costoPorUnidadBase(ing);
-    const stock = Number(state.inventario ? state.inventario[ing.id] : 0) || 0;
+    const stock = stockActual(ing.id);
+    const costoActual = costoActualIngrediente(ing).costo;
     const f = UNIT_FACTORS[ing.unidad] || { factor: 1 };
     const equivalente = (f.factor && f.factor !== 1)
       ? `≈ ${(stock / f.factor).toLocaleString('es-CL', { maximumFractionDigits: 2 })} ${ing.unidad}`
@@ -1709,7 +1884,7 @@ function renderInventario(){
       <div class="totals-strip" style="border:none; padding:2px 0;">
         <span>Stock actual</span><b style="color:${negativo ? 'var(--cherry)' : 'var(--mint-dark)'};">${stock.toLocaleString('es-CL', { maximumFractionDigits: 2 })} ${base}</b>
       </div>
-      ${equivalente ? `<div class="computed" style="text-align:left; color:var(--ink-soft); font-weight:400;">${equivalente}</div>` : ''}
+      <div class="computed" style="text-align:left; color:var(--ink-soft); font-weight:400;">Costo actual: ${money(costoActual)}/${base} ${equivalente ? `· ${equivalente}` : ''}</div>
       ${negativo ? `<div class="computed" style="text-align:left; color:var(--cherry);">⚠️ Sin stock suficiente para lo ya fabricado</div>` : ''}
     </div>`;
   }).join('');
@@ -2433,7 +2608,9 @@ function onAction(e){
     if(confirm(`¿Eliminar toda la venta registrada del ${formatFechaCorta(fecha)}? Esto borra fabricado, vendido y cortesías de todos los dulces ese día.`)){
       const entradasDia = state.registroDiario[fecha] || {};
       Object.keys(entradasDia).forEach(recetaId => {
-        ajustarInventarioPorFabricado(recetaId, -(Number(entradasDia[recetaId].fabricado) || 0));
+        const entry = entradasDia[recetaId];
+        const receta = state.recetas.find(r => r.id === recetaId);
+        if(receta) ajustarInventarioPorFabricado(receta, entry, 0);
       });
       delete state.registroDiario[fecha];
       if(registroFecha === fecha) registroFecha = todayStr();
@@ -2461,19 +2638,27 @@ function onAction(e){
     const selIng = document.getElementById('inventario-form-ingrediente');
     const ingredienteId = selIng ? selIng.value : '';
     const cantidadInput = Number(document.getElementById('inventario-form-cantidad').value) || 0;
+    const costoInput = Number(document.getElementById('inventario-form-costo').value) || 0;
     const notaInput = (document.getElementById('inventario-form-nota').value || '').trim();
     if(!ingredienteId){
       alert('Elige un ingrediente.');
     } else if(!cantidadInput){
       alert('Escribe una cantidad distinta de 0 (positiva para agregar, negativa para restar).');
     } else {
-      if(!state.inventario) state.inventario = {};
-      state.inventario[ingredienteId] = (Number(state.inventario[ingredienteId]) || 0) + cantidadInput;
       if(!state.movimientosInventario) state.movimientosInventario = [];
-      state.movimientosInventario.unshift({ id: uid(), ingredienteId, cantidad: cantidadInput, fecha: todayStr(), nota: notaInput });
       const ing = state.ingredientes.find(i => i.id === ingredienteId);
       const nombreIng = ing ? ing.nombre : 'el ingrediente';
-      inventarioFormConfirmMsg = `${cantidadInput > 0 ? 'Se sumaron' : 'Se restaron'} ${Math.abs(cantidadInput).toLocaleString('es-CL', { maximumFractionDigits: 2 })} de ${nombreIng} al stock.`;
+      if(cantidadInput > 0){
+        // Compra: crea un lote nuevo con su propio costo, al final de la cola FIFO.
+        const loteId = agregarLoteInventario(ingredienteId, cantidadInput, costoInput, todayStr(), notaInput);
+        state.movimientosInventario.unshift({ id: uid(), ingredienteId, cantidad: cantidadInput, costo: costoInput, loteId, fecha: todayStr(), nota: notaInput });
+        inventarioFormConfirmMsg = `Se agregó un lote de ${cantidadInput.toLocaleString('es-CL', { maximumFractionDigits: 2 })} de ${nombreIng}${costoInput > 0 ? ` por ${money(costoInput)}` : ''}.`;
+      } else {
+        // Merma / ajuste a la baja: descuenta del lote más antiguo (FIFO), igual que la producción.
+        const costoConsumoReal = consumirLoteFIFO(ingredienteId, Math.abs(cantidadInput));
+        state.movimientosInventario.unshift({ id: uid(), ingredienteId, cantidad: cantidadInput, costoConsumoReal, fecha: todayStr(), nota: notaInput });
+        inventarioFormConfirmMsg = `Se descontaron ${Math.abs(cantidadInput).toLocaleString('es-CL', { maximumFractionDigits: 2 })} de ${nombreIng} del lote más antiguo.`;
+      }
       inventarioFormOpen = false;
     }
   }
@@ -2481,9 +2666,17 @@ function onAction(e){
     if(state.bloqueos.inventario){ return; }
     const id = btn.dataset.id;
     const mov = (state.movimientosInventario || []).find(m => m.id === id);
-    if(mov && confirm('¿Deshacer este movimiento? Se restará del stock lo que este movimiento había sumado (o se devolverá, si era una resta).')){
-      if(!state.inventario) state.inventario = {};
-      state.inventario[mov.ingredienteId] = (Number(state.inventario[mov.ingredienteId]) || 0) - (Number(mov.cantidad) || 0);
+    if(mov && confirm('¿Deshacer este movimiento?')){
+      const cantidad = Number(mov.cantidad) || 0;
+      if(cantidad > 0 && mov.loteId){
+        // Era una compra: se quita el lote exacto que había creado (si ya se
+        // consumió parcialmente, solo queda lo que restaba de ese lote).
+        const lotes = (state.lotesInventario && state.lotesInventario[mov.ingredienteId]) || [];
+        state.lotesInventario[mov.ingredienteId] = lotes.filter(l => l.id !== mov.loteId);
+      } else if(cantidad < 0){
+        // Era una merma: se devuelve exactamente lo consumido, al frente de la fila.
+        devolverLoteFIFO(mov.ingredienteId, Math.abs(cantidad), Number(mov.costoConsumoReal) || 0);
+      }
       state.movimientosInventario = state.movimientosInventario.filter(m => m.id !== id);
     } else {
       return;
@@ -2532,7 +2725,9 @@ function onAction(e){
     if(confirm(`¿Borrar el registro de "${nombre}" de este día?`)){
       const fecha = registroFecha;
       if(state.registroDiario[fecha] && state.registroDiario[fecha][recetaId]){
-        ajustarInventarioPorFabricado(recetaId, -(Number(state.registroDiario[fecha][recetaId].fabricado) || 0));
+        const entry = state.registroDiario[fecha][recetaId];
+        const receta = state.recetas.find(r => r.id === recetaId);
+        if(receta) ajustarInventarioPorFabricado(receta, entry, 0);
         delete state.registroDiario[fecha][recetaId];
         if(Object.keys(state.registroDiario[fecha]).length === 0){
           delete state.registroDiario[fecha];
@@ -2570,7 +2765,13 @@ function onAction(e){
       let cortesiaInput = Number(document.getElementById('venta-form-cortesia').value) || 0;
       const fecha = registroFecha;
       if(!state.registroDiario[fecha]) state.registroDiario[fecha] = {};
-      const existente = getRecetaEntradaDia(fecha, recetaId);
+      if(!state.registroDiario[fecha][recetaId]){
+        state.registroDiario[fecha][recetaId] = { fabricado: 0, vendido: 0, cortesia: 0, completado: false, consumoDetalle: {}, costoIngredientes: 0 };
+      }
+      const entry = state.registroDiario[fecha][recetaId];
+      const fabricadoExistente = Number(entry.fabricado) || 0;
+      const vendidoExistente = Number(entry.vendido) || 0;
+      const cortesiaExistente = Number(entry.cortesia) || 0;
 
       let fabricado, vendido, cortesia;
       if(ventaFormMode === 'editar'){
@@ -2578,9 +2779,9 @@ function onAction(e){
         fabricado = fabricadoInput; vendido = vendidoInput; cortesia = cortesiaInput;
       } else {
         // Modo normal: lo escrito se SUMA a lo que ya llevaba registrado hoy.
-        fabricado = existente.fabricado + fabricadoInput;
-        vendido = existente.vendido + vendidoInput;
-        cortesia = existente.cortesia + cortesiaInput;
+        fabricado = fabricadoExistente + fabricadoInput;
+        vendido = vendidoExistente + vendidoInput;
+        cortesia = cortesiaExistente + cortesiaInput;
       }
 
       if(vendido + cortesia > fabricado){
@@ -2588,10 +2789,17 @@ function onAction(e){
         cortesia = Math.max(0, fabricado - vendido);
         if(vendido > fabricado) vendido = fabricado;
       }
-      ajustarInventarioPorFabricado(recetaId, fabricado - existente.fabricado);
+      const receta = state.recetas.find(r => r.id === recetaId);
+      if(receta){
+        ajustarInventarioPorFabricado(receta, entry, fabricado);
+      } else {
+        entry.fabricado = fabricado;
+      }
       // Cualquier edición (sumar o corregir) resetea el estado "completo": hay que
       // volver a confirmarlo a propósito con el botón "Marcar completo" si sigue cuadrando.
-      state.registroDiario[fecha][recetaId] = { fabricado, vendido, cortesia, completado: false };
+      entry.vendido = vendido;
+      entry.cortesia = cortesia;
+      entry.completado = false;
       ventaFormRecetaId = recetaId;
       const nombreReceta = state.recetas.find(r => r.id === recetaId);
       const nombreTexto = nombreReceta ? nombreReceta.nombre : 'Dulce';

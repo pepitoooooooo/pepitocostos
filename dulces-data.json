@@ -518,10 +518,7 @@
   },
   "bloqueos": {
     "ingredientes": true,
-    "recetas": true,
-    "inventario": false
+    "recetas": true
   },
-  "ocultarGanancia": false,
-  "inventario": {},
-  "movimientosInventario": []
+  "ocultarGanancia": false
 }
