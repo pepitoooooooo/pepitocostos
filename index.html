@@ -859,6 +859,7 @@ function defaultState(){
     registroDiario: {},
     bloqueos: { ingredientes: false, recetas: false, inventario: false },
     movimientosInventario: [],
+    transferenciasDiarias: {},
     ocultarGanancia: false,
   };
 }
@@ -1171,6 +1172,7 @@ function normalizeRestoredState(parsed){
   if(!parsed.registroDiario) parsed.registroDiario = {};
   if(!parsed.inventario) parsed.inventario = {};
   if(!parsed.movimientosInventario) parsed.movimientosInventario = [];
+  if(!parsed.transferenciasDiarias) parsed.transferenciasDiarias = {};
   if(!parsed.bloqueos) parsed.bloqueos = { ingredientes: false, recetas: false };
   if(parsed.bloqueos.inventario === undefined) parsed.bloqueos.inventario = false;
   if(parsed.ocultarGanancia === undefined) parsed.ocultarGanancia = false;
@@ -1556,6 +1558,19 @@ function getRecetaEntradaDia(fecha, recetaId){
     completado: e ? !!e.completado : false,
     costoIngredientes: e ? Number(e.costoIngredientes)||0 : 0,
   };
+}
+
+// Confirmación de que el efectivo vendido ese día se trasladó de verdad a la
+// cuenta donde se guarda la plata del negocio. Es un hecho físico ya
+// ocurrido: si después se edita el registro de ventas de ese día, esta
+// confirmación NO se borra sola (a diferencia de "Marcar completo") — se
+// muestra un aviso si el ingreso ya no coincide con lo confirmado, pero el
+// registro de que "trasladé $X" sigue siendo verdad.
+function getTransferenciaDia(fecha){
+  const t = state.transferenciasDiarias && state.transferenciasDiarias[fecha];
+  return t
+    ? { confirmado: !!t.confirmado, monto: Number(t.monto) || 0, fechaConfirmacion: t.fechaConfirmacion || '' }
+    : { confirmado: false, monto: 0, fechaConfirmacion: '' };
 }
 
 function calcDia(fecha){
@@ -1993,6 +2008,31 @@ function renderCalendario(fecha){
   `;
 }
 
+// Fila de confirmación de traslado de efectivo, solo aplica a un día
+// puntual (no a semana/mes: "trasladar la plata" es una acción de un día).
+function renderTrasladoRow(fecha, ingresoActual){
+  const tr = getTransferenciaDia(fecha);
+  if(tr.confirmado){
+    const coincide = Math.abs(tr.monto - ingresoActual) < 1;
+    return `
+      <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px; align-items:flex-start;">
+        <span>💰 Trasladado a tu cuenta</span>
+        <span style="text-align:right;">
+          <b style="color:#f4d99a;">✓ ${money(tr.monto)}</b><br>
+          <button type="button" data-action="deshacer-traslado-dia" data-fecha="${fecha}" style="background:transparent; border:none; color:#f0a8a8; font-size:11px; text-decoration:underline; cursor:pointer; padding:2px 0 0;">deshacer</button>
+        </span>
+      </div>
+      ${!coincide ? `<div class="section-hint" style="color:#f0a8a8; margin:2px 0 0;">El ingreso de este día cambió desde que confirmaste (${money(tr.monto)} → ${money(ingresoActual)}). Revisa si falta trasladar la diferencia.</div>` : ''}
+    `;
+  }
+  return `
+    <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px; align-items:center;">
+      <span>💰 Trasladado a tu cuenta</span>
+      <button type="button" data-action="confirmar-traslado-dia" data-fecha="${fecha}" style="background:#f4d99a; color:#2b1810; border:none; font-weight:700; font-size:12px; padding:6px 10px; border-radius:20px; cursor:pointer; white-space:nowrap;">Confirmar ${money(ingresoActual)}</button>
+    </div>
+  `;
+}
+
 function renderRegistro(){
   if(!state.recetas.length){
     return `<div class="section-title">🗓️ Producción diaria</div><div class="empty">Crea al menos un dulce en la pestaña Recetas para poder registrar tu producción diaria.</div>`;
@@ -2007,9 +2047,10 @@ function renderRegistro(){
     const d = calcDia(f);
     const g = d.totales.gananciaNeta;
     const esHoy = f === fecha;
+    const trHist = getTransferenciaDia(f);
     return `
     <div class="row" style="align-items:center; margin-bottom:6px;">
-      <span data-action="ver-dia" data-fecha="${f}" style="flex:1; font-size:13px; cursor:pointer; ${esHoy ? 'font-weight:700; color:var(--cherry);' : ''}">${formatFechaCorta(f)}</span>
+      <span data-action="ver-dia" data-fecha="${f}" style="flex:1; font-size:13px; cursor:pointer; ${esHoy ? 'font-weight:700; color:var(--cherry);' : ''}">${trHist.confirmado ? '💰 ' : ''}${formatFechaCorta(f)}</span>
       <span data-action="ver-dia" data-fecha="${f}" class="${g>=0?'pos':'neg'}" style="font-size:13px; font-weight:700; cursor:pointer;">${money(g)}</span>
       <button class="del-btn" data-action="delete-dia" data-fecha="${f}">✕</button>
     </div>`;
@@ -2116,6 +2157,7 @@ function renderRegistro(){
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Cortesías entregadas</span><b id="dia-cortesias" style="color:#f4d99a;">${t.totCortesia} un · -${money(t.costoCortesias)}</b></div>
       <div class="totals-strip" style="border:none; padding:4px 0;"><span>Pérdida por no venta</span><b id="dia-perdida" style="color:#f0a8a8;">${money(t.perdidaDinero)}</b></div>
       <div class="totals-strip" style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:8px;"><span>Ganancia neta</span><b id="dia-ganancia" class="${t.gananciaNeta>=0?'pos-dark':'neg-dark'}" style="font-size:16px;">${money(t.gananciaNeta)}</b></div>
+      ${resumenPeriodo === 'dia' ? renderTrasladoRow(fecha, t.ingreso) : ''}
     </div>
     ${historyDates.length ? `<div class="section-title" style="margin-top:22px; font-size:16px;">Historial</div>${historyHtml}` : ''}
   `;
@@ -2613,7 +2655,26 @@ function onAction(e){
         if(receta) ajustarInventarioPorFabricado(receta, entry, 0);
       });
       delete state.registroDiario[fecha];
+      if(state.transferenciasDiarias) delete state.transferenciasDiarias[fecha];
       if(registroFecha === fecha) registroFecha = todayStr();
+    } else {
+      return;
+    }
+  }
+  else if(action === 'confirmar-traslado-dia'){
+    const fecha = btn.dataset.fecha;
+    const monto = calcDia(fecha).totales.ingreso;
+    if(confirm(`¿Confirmas que trasladaste ${money(monto)} de las ventas del ${formatFechaCorta(fecha)} a tu cuenta?`)){
+      if(!state.transferenciasDiarias) state.transferenciasDiarias = {};
+      state.transferenciasDiarias[fecha] = { confirmado: true, monto, fechaConfirmacion: new Date().toLocaleString('es-CL') };
+    } else {
+      return;
+    }
+  }
+  else if(action === 'deshacer-traslado-dia'){
+    const fecha = btn.dataset.fecha;
+    if(confirm('¿Deshacer la confirmación de traslado de este día?')){
+      if(state.transferenciasDiarias) delete state.transferenciasDiarias[fecha];
     } else {
       return;
     }
