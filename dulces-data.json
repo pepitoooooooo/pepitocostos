@@ -560,5 +560,21 @@
   },
   "movimientosInventario": [],
   "lotesInventario": {},
-  "transferenciasDiarias": {}
+  "transferenciasDiarias": {
+    "2026-07-23": {
+      "confirmado": true,
+      "monto": 18500,
+      "fechaConfirmacion": "29-07-2026, 3:56:56 a. m."
+    },
+    "2026-07-24": {
+      "confirmado": true,
+      "monto": 48000,
+      "fechaConfirmacion": "29-07-2026, 3:56:57 a. m."
+    },
+    "2026-07-25": {
+      "confirmado": true,
+      "monto": 24000,
+      "fechaConfirmacion": "29-07-2026, 3:56:59 a. m."
+    }
+  }
 }
