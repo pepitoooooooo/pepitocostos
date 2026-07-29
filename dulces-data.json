@@ -456,6 +456,64 @@
         "vendido": 17,
         "cortesia": 0
       }
+    },
+    "2026-07-24": {
+      "p2je5ydc": {
+        "fabricado": 41,
+        "vendido": 34,
+        "cortesia": 7
+      },
+      "026l8zah": {
+        "fabricado": 33,
+        "vendido": 32,
+        "cortesia": 1
+      },
+      "00dn8rjf": {
+        "fabricado": 45,
+        "vendido": 45,
+        "cortesia": 0
+      }
+    },
+    "2026-07-25": {
+      "00dn8rjf": {
+        "fabricado": 45,
+        "vendido": 45,
+        "cortesia": 0
+      },
+      "026l8zah": {
+        "fabricado": 18,
+        "vendido": 9,
+        "cortesia": 9
+      },
+      "p2je5ydc": {
+        "fabricado": 18,
+        "vendido": 9,
+        "cortesia": 9
+      }
+    },
+    "2026-07-26": {
+      "026l8zah": {
+        "fabricado": 13,
+        "vendido": 13,
+        "cortesia": 0
+      },
+      "p2je5ydc": {
+        "fabricado": 23,
+        "vendido": 23,
+        "cortesia": 0
+      }
+    },
+    "2026-07-27": {
+      "026l8zah": {
+        "fabricado": 19,
+        "vendido": 19,
+        "cortesia": 0
+      },
+      "p2je5ydc": {
+        "fabricado": 19,
+        "vendido": 19,
+        "cortesia": 0
+      }
     }
   },
   "bloqueos": {
