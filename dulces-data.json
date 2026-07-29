@@ -449,76 +449,116 @@
       "026l8zah": {
         "fabricado": 20,
         "vendido": 20,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 3398.7548148148153,
+        "consumoDetalle": {}
       },
       "p2je5ydc": {
         "fabricado": 17,
         "vendido": 17,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 1868.9415925925925,
+        "consumoDetalle": {}
       }
     },
     "2026-07-24": {
       "p2je5ydc": {
         "fabricado": 41,
         "vendido": 34,
-        "cortesia": 7
+        "cortesia": 7,
+        "costoIngredientes": 4507.44737037037,
+        "consumoDetalle": {}
       },
       "026l8zah": {
         "fabricado": 33,
         "vendido": 32,
-        "cortesia": 1
+        "cortesia": 1,
+        "costoIngredientes": 5607.9454444444455,
+        "consumoDetalle": {}
       },
       "00dn8rjf": {
         "fabricado": 45,
         "vendido": 45,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 3616.2920000000004,
+        "consumoDetalle": {}
       }
     },
     "2026-07-25": {
       "00dn8rjf": {
         "fabricado": 45,
         "vendido": 45,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 3616.2920000000004,
+        "consumoDetalle": {}
       },
       "026l8zah": {
         "fabricado": 18,
         "vendido": 9,
-        "cortesia": 9
+        "cortesia": 9,
+        "costoIngredientes": 3058.8793333333338,
+        "consumoDetalle": {}
       },
       "p2je5ydc": {
         "fabricado": 18,
         "vendido": 9,
-        "cortesia": 9
+        "cortesia": 9,
+        "costoIngredientes": 1978.8793333333333,
+        "consumoDetalle": {}
       }
     },
     "2026-07-26": {
       "026l8zah": {
         "fabricado": 13,
         "vendido": 13,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 2209.19062962963,
+        "consumoDetalle": {}
       },
       "p2je5ydc": {
         "fabricado": 23,
         "vendido": 23,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 2528.568037037037,
+        "consumoDetalle": {}
       }
     },
     "2026-07-27": {
       "026l8zah": {
         "fabricado": 19,
         "vendido": 19,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 3228.8170740740743,
+        "consumoDetalle": {}
       },
       "p2je5ydc": {
         "fabricado": 19,
         "vendido": 19,
-        "cortesia": 0
+        "cortesia": 0,
+        "costoIngredientes": 2088.817074074074,
+        "consumoDetalle": {}
       }
     }
   },
   "bloqueos": {
     "ingredientes": true,
-    "recetas": true
+    "recetas": true,
+    "inventario": true
   },
-  "ocultarGanancia": false
+  "ocultarGanancia": false,
+  "inventario": {
+    "nfqecha8": 0,
+    "929onaah": 0,
+    "wt3ezpv6": 0,
+    "4p2py1ge": 0,
+    "d3qr73i6": 0,
+    "6nkpn15c": 0,
+    "cf18af3r": 0,
+    "axwel3ok": 0,
+    "hjcwbwsr": 0,
+    "ghuzm2sl": 0
+  },
+  "movimientosInventario": [],
+  "lotesInventario": {},
+  "transferenciasDiarias": {}
 }
