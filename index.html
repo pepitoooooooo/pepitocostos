@@ -772,6 +772,7 @@
     <span id="sync-status">Sin sincronizar con GitHub</span>
     <div class="sync-bar-btns">
       <button id="btn-sync-settings" title="Configurar GitHub">⚙️</button>
+      <button id="btn-sync-history" title="Historial (últimas versiones)">🕐</button>
       <button id="btn-sync-restore" title="Restaurar desde GitHub">⬇️</button>
       <button id="btn-sync-now" title="Sincronizar con GitHub">🔄 Sync</button>
     </div>
@@ -792,12 +793,17 @@
     <div class="sync-hint">El token queda guardado solo en este navegador, nunca se sube al repositorio. Créalo en GitHub → Settings → Developer settings → Fine-grained tokens, dándole acceso solo a este repositorio con permiso "Contents: Read and write".</div>
     <button class="add-btn" id="btn-sync-save-config">Guardar configuración</button>
   </div>
+  <div class="sync-panel" id="history-panel">
+    <div class="sync-hint">Últimas versiones sincronizadas en GitHub. Toca una para restaurarla en este dispositivo (se pedirá confirmación antes de reemplazar tus datos).</div>
+    <div id="history-list"></div>
+  </div>
 
   <main id="tab-content"></main>
 
   <nav class="bottom">
     <button data-tab="ingredientes"><span class="ic">🍬</span>Ingredientes</button>
     <button data-tab="recetas"><span class="ic">🧁</span>Recetas</button>
+    <button data-tab="inventario"><span class="ic">📦</span>Inventario</button>
     <button data-tab="gastos"><span class="ic">💡</span>Gastos fijos</button>
     <button data-tab="registro"><span class="ic">🗓️</span>Registro</button>
     <button data-tab="resumen"><span class="ic">📊</span>Resumen</button>
@@ -848,8 +854,10 @@ function defaultState(){
     ],
     produccionMensual: 300,
     ventas: {},
+    inventario: {},
     registroDiario: {},
-    bloqueos: { ingredientes: false, recetas: false },
+    bloqueos: { ingredientes: false, recetas: false, inventario: false },
+    movimientosInventario: [],
     ocultarGanancia: false,
   };
 }
@@ -987,6 +995,9 @@ let ventaFormConfirmMsg = null;
 // 'agregar': lo que escribas se SUMA a lo ya registrado ese día (uso normal, varias veces al día).
 // 'editar': lo que escribas REEMPLAZA el total del día (para corregir un error).
 let ventaFormMode = 'agregar';
+let inventarioFormOpen = false;
+let inventarioFormIngredienteId = null;
+let inventarioFormConfirmMsg = null;
 let saveTimer = null;
 
 // Usa el almacenamiento de Claude si está disponible (vista previa del artefacto);
@@ -1014,17 +1025,7 @@ async function loadState(){
   const value = await storageGet(STORAGE_KEY);
   if(value){
     try{
-      state = JSON.parse(value);
-      if(!state.registroDiario) state.registroDiario = {};
-      if(!state.bloqueos) state.bloqueos = { ingredientes: false, recetas: false };
-      if(state.ocultarGanancia === undefined) state.ocultarGanancia = false;
-      (state.ingredientes || []).forEach(ing => { if(ing.lugarCompra === undefined) ing.lugarCompra = ''; });
-      (state.recetas || []).forEach(r => {
-        if(r.etaFabricacionHoras === undefined) r.etaFabricacionHoras = r.etaHoras || 0;
-        if(r.etaFabricacionMinutos === undefined) r.etaFabricacionMinutos = r.etaMinutos || 0;
-        if(r.etaEsperaHoras === undefined) r.etaEsperaHoras = 0;
-        if(r.etaEsperaMinutos === undefined) r.etaEsperaMinutos = 0;
-      });
+      state = normalizeRestoredState(JSON.parse(value));
       return;
     }catch(e){ /* datos corruptos, se reinicia abajo */ }
   }
@@ -1067,6 +1068,8 @@ function setSyncStatusText(text){
 function toggleSyncPanel(){
   const panel = document.getElementById('sync-panel');
   if(!panel) return;
+  const historyPanel = document.getElementById('history-panel');
+  if(historyPanel) historyPanel.classList.remove('show');
   panel.classList.toggle('show');
   if(panel.classList.contains('show')){
     const cfg = getSyncConfig() || {};
@@ -1109,6 +1112,7 @@ async function githubRequest(cfg, path, options){
 async function syncToGithub(){
   const cfg = getSyncConfig();
   if(!cfg){ toggleSyncPanel(); return; }
+  if(!confirm('Vas a subir los datos de este dispositivo a GitHub, reemplazando lo que haya guardado ahí. ¿Continuar?')) return;
   setSyncStatusText('Sincronizando…');
   try{
     // Buscar si el archivo ya existe, para obtener su sha (requisito de la API para actualizar)
@@ -1144,6 +1148,24 @@ async function syncToGithub(){
   }
 }
 
+function normalizeRestoredState(parsed){
+  if(!parsed.registroDiario) parsed.registroDiario = {};
+  if(!parsed.inventario) parsed.inventario = {};
+  if(!parsed.movimientosInventario) parsed.movimientosInventario = [];
+  if(!parsed.bloqueos) parsed.bloqueos = { ingredientes: false, recetas: false };
+  if(parsed.bloqueos.inventario === undefined) parsed.bloqueos.inventario = false;
+  if(parsed.ocultarGanancia === undefined) parsed.ocultarGanancia = false;
+  (parsed.ingredientes || []).forEach(ing => { if(ing.lugarCompra === undefined) ing.lugarCompra = ''; });
+  (parsed.recetas || []).forEach(r => {
+    if(r.etaFabricacionHoras === undefined) r.etaFabricacionHoras = r.etaHoras || 0;
+    if(r.etaFabricacionMinutos === undefined) r.etaFabricacionMinutos = r.etaMinutos || 0;
+    if(r.etaEsperaHoras === undefined) r.etaEsperaHoras = 0;
+    if(r.etaEsperaMinutos === undefined) r.etaEsperaMinutos = 0;
+  });
+  if(!parsed.ventas) parsed.ventas = {};
+  return parsed;
+}
+
 async function restoreFromGithub(){
   const cfg = getSyncConfig();
   if(!cfg){ toggleSyncPanel(); return; }
@@ -1159,18 +1181,7 @@ async function restoreFromGithub(){
     if(!res.ok) throw new Error(`GitHub respondió ${res.status}`);
     const info = await res.json();
     const jsonStr = decodeURIComponent(escape(atob(info.content.replace(/\n/g, ''))));
-    const parsed = JSON.parse(jsonStr);
-    if(!parsed.registroDiario) parsed.registroDiario = {};
-    if(!parsed.bloqueos) parsed.bloqueos = { ingredientes: false, recetas: false };
-    if(parsed.ocultarGanancia === undefined) parsed.ocultarGanancia = false;
-    (parsed.ingredientes || []).forEach(ing => { if(ing.lugarCompra === undefined) ing.lugarCompra = ''; });
-    (parsed.recetas || []).forEach(r => {
-      if(r.etaFabricacionHoras === undefined) r.etaFabricacionHoras = r.etaHoras || 0;
-      if(r.etaFabricacionMinutos === undefined) r.etaFabricacionMinutos = r.etaMinutos || 0;
-      if(r.etaEsperaHoras === undefined) r.etaEsperaHoras = 0;
-      if(r.etaEsperaMinutos === undefined) r.etaEsperaMinutos = 0;
-    });
-    if(!parsed.ventas) parsed.ventas = {};
+    const parsed = normalizeRestoredState(JSON.parse(jsonStr));
     state = parsed;
     await persist();
     render();
@@ -1179,6 +1190,81 @@ async function restoreFromGithub(){
     console.error(e);
     setSyncStatusText('Error al restaurar');
     alert('No se pudo restaurar desde GitHub:\n' + e.message);
+  }
+}
+
+// ---------- Historial de versiones (últimas sincronizaciones) ----------
+function toggleHistoryPanel(){
+  const panel = document.getElementById('history-panel');
+  if(!panel) return;
+  const syncPanel = document.getElementById('sync-panel');
+  if(syncPanel) syncPanel.classList.remove('show');
+  panel.classList.toggle('show');
+  if(panel.classList.contains('show')) loadSyncHistory();
+}
+
+async function loadSyncHistory(){
+  const cfg = getSyncConfig();
+  const listEl = document.getElementById('history-list');
+  if(!listEl) return;
+  if(!cfg){
+    listEl.innerHTML = '<div class="sync-hint">Primero configura GitHub con ⚙️.</div>';
+    return;
+  }
+  listEl.innerHTML = '<div class="sync-hint">Cargando historial…</div>';
+  try{
+    const url = `https://api.github.com/repos/${cfg.repo}/commits?path=${encodeURIComponent(SYNC_DATA_PATH)}&sha=${encodeURIComponent(cfg.branch)}&per_page=3`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github+json',
+      },
+    });
+    if(!res.ok) throw new Error(`GitHub respondió ${res.status}`);
+    const commits = await res.json();
+    if(!Array.isArray(commits) || commits.length === 0){
+      listEl.innerHTML = '<div class="sync-hint">Todavía no hay historial de sincronizaciones para este archivo.</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    commits.forEach((c, i) => {
+      const date = new Date(c.commit.author.date);
+      const label = date.toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'add-btn';
+      btn.style.marginTop = '8px';
+      btn.textContent = (i === 0 ? '🕐 Más reciente — ' : '') + label;
+      btn.title = c.commit.message || '';
+      btn.addEventListener('click', () => restoreFromCommit(c.sha, label));
+      listEl.appendChild(btn);
+    });
+  }catch(e){
+    console.error(e);
+    listEl.innerHTML = '<div class="sync-hint">No se pudo cargar el historial: ' + e.message + '</div>';
+  }
+}
+
+async function restoreFromCommit(sha, label){
+  const cfg = getSyncConfig();
+  if(!cfg) return;
+  if(!confirm(`Esto va a reemplazar los datos guardados en este dispositivo con la versión del ${label}. ¿Continuar?`)) return;
+  setSyncStatusText('Restaurando versión anterior…');
+  try{
+    const res = await githubRequest(cfg, SYNC_DATA_PATH, { query: `?ref=${encodeURIComponent(sha)}` });
+    if(!res.ok) throw new Error(`GitHub respondió ${res.status}`);
+    const info = await res.json();
+    const jsonStr = decodeURIComponent(escape(atob(info.content.replace(/\n/g, ''))));
+    const parsed = normalizeRestoredState(JSON.parse(jsonStr));
+    state = parsed;
+    await persist();
+    render();
+    document.getElementById('history-panel').classList.remove('show');
+    setSyncStatusText(`Restaurado (${label}) ✓`);
+  }catch(e){
+    console.error(e);
+    setSyncStatusText('Error al restaurar versión anterior');
+    alert('No se pudo restaurar esa versión:\n' + e.message);
   }
 }
 
@@ -1217,6 +1303,32 @@ function calcReceta(receta){
   const unidades = Number(receta.unidadesPorTanda) || 0;
   const costoPorDulce = unidades ? total / unidades : 0;
   return { total, itemCostos, costoPorDulce };
+}
+
+// ---------- Inventario: descuento automático por producción ----------
+// Cuánto se gasta de cada ingrediente por CADA unidad fabricada (no por tanda).
+function consumoRecetaPorUnidad(receta){
+  const unidadesPorTanda = Number(receta.unidadesPorTanda) || 0;
+  if(!unidadesPorTanda) return [];
+  return receta.items.map(item => ({
+    ingredienteId: item.ingredienteId,
+    cantidadPorUnidad: (Number(item.cantidadUsada) || 0) / unidadesPorTanda,
+  }));
+}
+
+// Ajusta el inventario según un cambio en "fabricado" de una receta.
+// deltaFabricado positivo = se fabricó más → descuenta stock.
+// deltaFabricado negativo = se corrigió a la baja o se borró un registro → devuelve stock.
+function ajustarInventarioPorFabricado(recetaId, deltaFabricado){
+  if(!deltaFabricado) return;
+  const receta = state.recetas.find(r => r.id === recetaId);
+  if(!receta) return;
+  if(!state.inventario) state.inventario = {};
+  consumoRecetaPorUnidad(receta).forEach(({ ingredienteId, cantidadPorUnidad }) => {
+    if(!ingredienteId || !cantidadPorUnidad) return;
+    const actual = Number(state.inventario[ingredienteId]) || 0;
+    state.inventario[ingredienteId] = actual - (cantidadPorUnidad * deltaFabricado);
+  });
 }
 
 function calcGastos(){
@@ -1277,6 +1389,7 @@ function getRecetaEntradaDia(fecha, recetaId){
     fabricado: e ? Number(e.fabricado)||0 : 0,
     vendido: e ? Number(e.vendido)||0 : 0,
     cortesia: e ? Number(e.cortesia)||0 : 0,
+    completado: e ? !!e.completado : false,
   };
 }
 
@@ -1419,6 +1532,7 @@ function render(){
   const main = document.getElementById('tab-content');
   if(activeTab === 'ingredientes') main.innerHTML = renderIngredientes();
   else if(activeTab === 'recetas') main.innerHTML = renderRecetas();
+  else if(activeTab === 'inventario') main.innerHTML = renderInventario();
   else if(activeTab === 'gastos') main.innerHTML = renderGastos();
   else if(activeTab === 'registro') main.innerHTML = renderRegistro();
   else main.innerHTML = renderResumen();
@@ -1540,6 +1654,96 @@ function renderRecetas(){
   `;
 }
 
+function renderInventario(){
+  const locked = state.bloqueos.inventario;
+  const movimientos = state.movimientosInventario || [];
+
+  if(!inventarioFormIngredienteId || !state.ingredientes.some(i => i.id === inventarioFormIngredienteId)){
+    inventarioFormIngredienteId = state.ingredientes[0] ? state.ingredientes[0].id : null;
+  }
+  const ingSeleccionado = state.ingredientes.find(i => i.id === inventarioFormIngredienteId);
+  const baseSeleccionado = ingSeleccionado ? costoPorUnidadBase(ingSeleccionado).base : '';
+  const ingOptions = state.ingredientes.map(ing => `<option value="${ing.id}" ${ing.id===inventarioFormIngredienteId?'selected':''}>${escapeAttr(ing.nombre)}</option>`).join('');
+
+  const formHtml = `
+    ${inventarioFormConfirmMsg ? `<div class="confirm-banner">✓ ${inventarioFormConfirmMsg}</div>` : ''}
+    ${(!locked && state.ingredientes.length) ? `<button class="add-btn" data-action="toggle-inv-form" style="margin-bottom:${inventarioFormOpen ? '10px' : '18px'};">
+      ${inventarioFormOpen ? '▴ Cerrar' : '+ Agregar inventario'}
+    </button>` : ''}
+    ${(inventarioFormOpen && !locked) ? `
+    <div class="card" style="margin-bottom:18px;">
+      <div class="section-hint" style="margin:0 0 10px;">
+        Registra un movimiento: positivo si compraste o repusiste, negativo si hubo una merma o corrección a la baja. Se suma (o resta) al stock actual — nunca se reemplaza el número directamente.
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <label style="width:64px;">Ingrediente</label>
+        <select id="inventario-form-ingrediente">${ingOptions}</select>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <label style="width:64px;">Cantidad</label>
+        <input type="number" step="any" id="inventario-form-cantidad" placeholder="Ej: 5000 o -200">
+        <span class="unit-tag">${baseSeleccionado}</span>
+      </div>
+      <div class="row" style="margin-bottom:0;">
+        <label style="width:64px;">Nota</label>
+        <input type="text" id="inventario-form-nota" placeholder="Opcional: proveedor, motivo…">
+      </div>
+      <button class="btn-venta" data-action="form-confirmar-movimiento" style="width:100%; margin-top:14px; padding:11px 0;">Registrar movimiento</button>
+    </div>
+    ` : ''}
+  `;
+
+  const cards = state.ingredientes.map(ing => {
+    const { base } = costoPorUnidadBase(ing);
+    const stock = Number(state.inventario ? state.inventario[ing.id] : 0) || 0;
+    const f = UNIT_FACTORS[ing.unidad] || { factor: 1 };
+    const equivalente = (f.factor && f.factor !== 1)
+      ? `≈ ${(stock / f.factor).toLocaleString('es-CL', { maximumFractionDigits: 2 })} ${ing.unidad}`
+      : '';
+    const negativo = stock < 0;
+    return `
+    <div class="card" data-kind="inventario" data-id="${ing.id}">
+      <div class="card-head">
+        <span class="name-input" style="font-family:Georgia, serif; font-style:italic; font-size:17px; color:var(--ink);">${escapeAttr(ing.nombre)}</span>
+      </div>
+      <div class="totals-strip" style="border:none; padding:2px 0;">
+        <span>Stock actual</span><b style="color:${negativo ? 'var(--cherry)' : 'var(--mint-dark)'};">${stock.toLocaleString('es-CL', { maximumFractionDigits: 2 })} ${base}</b>
+      </div>
+      ${equivalente ? `<div class="computed" style="text-align:left; color:var(--ink-soft); font-weight:400;">${equivalente}</div>` : ''}
+      ${negativo ? `<div class="computed" style="text-align:left; color:var(--cherry);">⚠️ Sin stock suficiente para lo ya fabricado</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const movimientosHtml = movimientos.length ? `
+    <div class="section-title" style="margin-top:22px; font-size:16px;">📋 Movimientos recientes</div>
+    ${movimientos.slice(0, 10).map(m => {
+      const ing = state.ingredientes.find(i => i.id === m.ingredienteId);
+      const nombre = ing ? ing.nombre : '(ingrediente eliminado)';
+      const base = ing ? costoPorUnidadBase(ing).base : '';
+      const cantidad = Number(m.cantidad) || 0;
+      const signo = cantidad > 0 ? '+' : '';
+      return `
+      <div class="registrado-row">
+        <div style="flex:1; min-width:0; font-size:13px;">
+          <span style="font-family:Georgia, serif; font-style:italic; color:var(--ink);">${escapeAttr(nombre)}</span>
+          <span class="registrado-detalle" style="display:block; text-align:left;">${formatFechaCorta(m.fecha)}${m.nota ? ` · ${escapeAttr(m.nota)}` : ''}</span>
+        </div>
+        <span style="font-size:13px; font-weight:700; color:${cantidad >= 0 ? 'var(--mint-dark)' : 'var(--cherry)'};">${signo}${cantidad.toLocaleString('es-CL', { maximumFractionDigits: 2 })} ${base}</span>
+        ${!locked ? `<button class="del-btn" data-action="delete-movimiento-inventario" data-id="${m.id}">✕</button>` : ''}
+      </div>`;
+    }).join('')}
+  ` : '';
+
+  return `
+    <div class="section-title">📦 Inventario</div>
+    ${renderLockBar('inventario', locked)}
+    <div class="section-hint">El stock se descuenta solo cuando registras "Fabricado" en Registro, según la receta. Para cargar compras o corregir una diferencia, usa "+ Agregar inventario" — el número no se edita directamente, así siempre queda registro de qué pasó.</div>
+    ${formHtml}
+    ${state.ingredientes.length ? cards : '<div class="empty">Agrega ingredientes en la pestaña Ingredientes primero.</div>'}
+    ${movimientosHtml}
+  `;
+}
+
 function renderGastos(){
   const { total, porDulce } = calcGastos();
   const rows = state.gastos.map(g => `
@@ -1655,15 +1859,25 @@ function renderRegistro(){
   const registradosHoyHtml = registradosHoy.length ? `
     <div class="registrados-hoy">
       <div class="registrados-hoy-title">Ya registrado ${fecha === todayStr() ? 'hoy' : 'ese día'}</div>
-      ${registradosHoy.map(x => `
+      ${registradosHoy.map(x => {
+        const pendienteRaw = x.entry.fabricado - x.entry.vendido - x.entry.cortesia;
+        const pendiente = Math.max(0, Math.round(pendienteRaw * 1000) / 1000);
+        const sePuedeCompletar = x.entry.fabricado > 0 && Math.abs(pendienteRaw) < 1e-6;
+        const estadoHtml = x.entry.completado
+          ? `<span class="tag-chip pos" style="color:var(--mint-dark); white-space:nowrap;">✓ Completo</span>`
+          : sePuedeCompletar
+            ? `<button type="button" class="tag-chip pos" data-action="marcar-completo-registro" data-receta-id="${x.receta.id}" style="color:var(--mint-dark); border:1.5px solid var(--mint-dark); background:transparent; cursor:pointer; white-space:nowrap;">✓ Marcar completo</button>`
+            : `<span class="tag-chip neg" style="color:var(--cherry); white-space:nowrap;" title="Aún falta vender o regalar ${pendiente} unidad${pendiente===1?'':'es'} para poder marcarlo completo">${pendiente} pendiente${pendiente===1?'':'s'}</span>`;
+        return `
         <div class="registrado-row">
           <div class="registrado-tap" data-action="editar-registro-dulce" data-receta-id="${x.receta.id}">
             <span>${escapeAttr(x.receta.nombre)}</span>
             <span class="registrado-detalle">${x.entry.fabricado} fab · ${x.entry.vendido} vend${x.entry.cortesia>0 ? ` · 🎁 ${x.entry.cortesia}` : ''}</span>
           </div>
+          ${estadoHtml}
           <button class="del-btn" data-action="delete-registro-dulce" data-receta-id="${x.receta.id}" data-nombre="${escapeAttr(x.receta.nombre)}" title="Eliminar este registro">✕</button>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>
   ` : '';
 
@@ -1869,6 +2083,15 @@ function attachHandlers(){
     ventaFormDulce.addEventListener('change', () => {
       ventaFormRecetaId = ventaFormDulce.value;
       ventaFormConfirmMsg = null;
+      render();
+    });
+  }
+
+  const inventarioFormIngrediente = document.getElementById('inventario-form-ingrediente');
+  if(inventarioFormIngrediente){
+    inventarioFormIngrediente.addEventListener('change', () => {
+      inventarioFormIngredienteId = inventarioFormIngrediente.value;
+      inventarioFormConfirmMsg = null;
       render();
     });
   }
@@ -2208,6 +2431,10 @@ function onAction(e){
   else if(action === 'delete-dia'){
     const fecha = btn.dataset.fecha;
     if(confirm(`¿Eliminar toda la venta registrada del ${formatFechaCorta(fecha)}? Esto borra fabricado, vendido y cortesías de todos los dulces ese día.`)){
+      const entradasDia = state.registroDiario[fecha] || {};
+      Object.keys(entradasDia).forEach(recetaId => {
+        ajustarInventarioPorFabricado(recetaId, -(Number(entradasDia[recetaId].fabricado) || 0));
+      });
       delete state.registroDiario[fecha];
       if(registroFecha === fecha) registroFecha = todayStr();
     } else {
@@ -2219,6 +2446,48 @@ function onAction(e){
   }
   else if(action === 'toggle-lock-recetas'){
     state.bloqueos.recetas = !state.bloqueos.recetas;
+  }
+  else if(action === 'toggle-lock-inventario'){
+    state.bloqueos.inventario = !state.bloqueos.inventario;
+  }
+  else if(action === 'toggle-inv-form'){
+    inventarioFormOpen = !inventarioFormOpen;
+    inventarioFormConfirmMsg = null;
+    render();
+    return;
+  }
+  else if(action === 'form-confirmar-movimiento'){
+    if(state.bloqueos.inventario){ return; }
+    const selIng = document.getElementById('inventario-form-ingrediente');
+    const ingredienteId = selIng ? selIng.value : '';
+    const cantidadInput = Number(document.getElementById('inventario-form-cantidad').value) || 0;
+    const notaInput = (document.getElementById('inventario-form-nota').value || '').trim();
+    if(!ingredienteId){
+      alert('Elige un ingrediente.');
+    } else if(!cantidadInput){
+      alert('Escribe una cantidad distinta de 0 (positiva para agregar, negativa para restar).');
+    } else {
+      if(!state.inventario) state.inventario = {};
+      state.inventario[ingredienteId] = (Number(state.inventario[ingredienteId]) || 0) + cantidadInput;
+      if(!state.movimientosInventario) state.movimientosInventario = [];
+      state.movimientosInventario.unshift({ id: uid(), ingredienteId, cantidad: cantidadInput, fecha: todayStr(), nota: notaInput });
+      const ing = state.ingredientes.find(i => i.id === ingredienteId);
+      const nombreIng = ing ? ing.nombre : 'el ingrediente';
+      inventarioFormConfirmMsg = `${cantidadInput > 0 ? 'Se sumaron' : 'Se restaron'} ${Math.abs(cantidadInput).toLocaleString('es-CL', { maximumFractionDigits: 2 })} de ${nombreIng} al stock.`;
+      inventarioFormOpen = false;
+    }
+  }
+  else if(action === 'delete-movimiento-inventario'){
+    if(state.bloqueos.inventario){ return; }
+    const id = btn.dataset.id;
+    const mov = (state.movimientosInventario || []).find(m => m.id === id);
+    if(mov && confirm('¿Deshacer este movimiento? Se restará del stock lo que este movimiento había sumado (o se devolverá, si era una resta).')){
+      if(!state.inventario) state.inventario = {};
+      state.inventario[mov.ingredienteId] = (Number(state.inventario[mov.ingredienteId]) || 0) - (Number(mov.cantidad) || 0);
+      state.movimientosInventario = state.movimientosInventario.filter(m => m.id !== id);
+    } else {
+      return;
+    }
   }
   else if(action === 'toggle-calendario'){
     calendarOpen = !calendarOpen;
@@ -2262,7 +2531,8 @@ function onAction(e){
     const nombre = btn.dataset.nombre || 'este dulce';
     if(confirm(`¿Borrar el registro de "${nombre}" de este día?`)){
       const fecha = registroFecha;
-      if(state.registroDiario[fecha]){
+      if(state.registroDiario[fecha] && state.registroDiario[fecha][recetaId]){
+        ajustarInventarioPorFabricado(recetaId, -(Number(state.registroDiario[fecha][recetaId].fabricado) || 0));
         delete state.registroDiario[fecha][recetaId];
         if(Object.keys(state.registroDiario[fecha]).length === 0){
           delete state.registroDiario[fecha];
@@ -2272,6 +2542,22 @@ function onAction(e){
     } else {
       return;
     }
+  }
+  else if(action === 'marcar-completo-registro'){
+    const recetaId = btn.dataset.recetaId;
+    const fecha = registroFecha;
+    const entry = state.registroDiario[fecha] && state.registroDiario[fecha][recetaId];
+    if(!entry){
+      return;
+    }
+    const fabricado = Number(entry.fabricado) || 0;
+    const vendido = Number(entry.vendido) || 0;
+    const cortesia = Number(entry.cortesia) || 0;
+    if(fabricado <= 0 || Math.abs(vendido + cortesia - fabricado) > 1e-6){
+      alert('Todavía no cuadra: vendido + cortesía tiene que ser igual a lo fabricado para poder marcarlo completo.');
+      return;
+    }
+    entry.completado = true;
   }
   else if(action === 'form-confirmar-venta'){
     const dulceSel = document.getElementById('venta-form-dulce');
@@ -2302,7 +2588,10 @@ function onAction(e){
         cortesia = Math.max(0, fabricado - vendido);
         if(vendido > fabricado) vendido = fabricado;
       }
-      state.registroDiario[fecha][recetaId] = { fabricado, vendido, cortesia };
+      ajustarInventarioPorFabricado(recetaId, fabricado - existente.fabricado);
+      // Cualquier edición (sumar o corregir) resetea el estado "completo": hay que
+      // volver a confirmarlo a propósito con el botón "Marcar completo" si sigue cuadrando.
+      state.registroDiario[fecha][recetaId] = { fabricado, vendido, cortesia, completado: false };
       ventaFormRecetaId = recetaId;
       const nombreReceta = state.recetas.find(r => r.id === recetaId);
       const nombreTexto = nombreReceta ? nombreReceta.nombre : 'Dulce';
@@ -2324,6 +2613,7 @@ document.querySelectorAll('nav.bottom button').forEach(btn => {
 });
 
 document.getElementById('btn-sync-settings').addEventListener('click', toggleSyncPanel);
+document.getElementById('btn-sync-history').addEventListener('click', toggleHistoryPanel);
 document.getElementById('ticker-eye').addEventListener('click', toggleOcultarGanancia);
 document.getElementById('btn-sync-save-config').addEventListener('click', saveSyncConfigFromPanel);
 document.getElementById('btn-sync-now').addEventListener('click', syncToGithub);
