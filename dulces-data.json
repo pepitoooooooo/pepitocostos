@@ -683,6 +683,106 @@
         },
         "costoIngredientes": 1978.8793333333333
       }
+    },
+    "2026-07-29": {
+      "026l8zah": {
+        "fabricado": 18,
+        "vendido": 0,
+        "cortesia": 18,
+        "completado": true,
+        "consumoDetalle": {
+          "nfqecha8": {
+            "cantidad": 110,
+            "costo": 94.05
+          },
+          "929onaah": {
+            "cantidad": 510,
+            "costo": 407.796
+          },
+          "wt3ezpv6": {
+            "cantidad": 20,
+            "costo": 99.60000000000001
+          },
+          "4p2py1ge": {
+            "cantidad": 0.5,
+            "costo": 99.5
+          },
+          "d3qr73i6": {
+            "cantidad": 35,
+            "costo": 35
+          },
+          "6nkpn15c": {
+            "cantidad": 20,
+            "costo": 119.60000000000001
+          },
+          "cf18af3r": {
+            "cantidad": 50,
+            "costo": 140
+          },
+          "axwel3ok": {
+            "cantidad": 540,
+            "costo": 1980
+          },
+          "hjcwbwsr": {
+            "cantidad": 30,
+            "costo": 60
+          },
+          "ghuzm2sl": {
+            "cantidad": 15,
+            "costo": 23.333333333333332
+          }
+        },
+        "costoIngredientes": 3058.8793333333338
+      },
+      "p2je5ydc": {
+        "fabricado": 18,
+        "vendido": 0,
+        "cortesia": 18,
+        "completado": true,
+        "consumoDetalle": {
+          "nfqecha8": {
+            "cantidad": 110,
+            "costo": 94.05
+          },
+          "929onaah": {
+            "cantidad": 510,
+            "costo": 407.796
+          },
+          "wt3ezpv6": {
+            "cantidad": 20,
+            "costo": 99.60000000000001
+          },
+          "4p2py1ge": {
+            "cantidad": 0.5,
+            "costo": 99.5
+          },
+          "d3qr73i6": {
+            "cantidad": 35,
+            "costo": 35
+          },
+          "6nkpn15c": {
+            "cantidad": 20,
+            "costo": 119.60000000000001
+          },
+          "cf18af3r": {
+            "cantidad": 50,
+            "costo": 140
+          },
+          "pwwviz7f": {
+            "cantidad": 200,
+            "costo": 900
+          },
+          "hjcwbwsr": {
+            "cantidad": 30,
+            "costo": 60
+          },
+          "ghuzm2sl": {
+            "cantidad": 15,
+            "costo": 23.333333333333332
+          }
+        },
+        "costoIngredientes": 1978.8793333333333
+      }
     }
   },
   "bloqueos": {
@@ -708,7 +808,7 @@
     "nfqecha8": [
       {
         "id": "4mypz6hy",
-        "cantidadRestante": -440,
+        "cantidadRestante": -660,
         "costoUnitario": 0.855,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -718,7 +818,7 @@
     "929onaah": [
       {
         "id": "wt7lisep",
-        "cantidadRestante": -2040,
+        "cantidadRestante": -3060,
         "costoUnitario": 0.7996,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -728,7 +828,7 @@
     "wt3ezpv6": [
       {
         "id": "vfzhdz48",
-        "cantidadRestante": -80,
+        "cantidadRestante": -120,
         "costoUnitario": 4.98,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -738,7 +838,7 @@
     "4p2py1ge": [
       {
         "id": "ebp15x3i",
-        "cantidadRestante": -2,
+        "cantidadRestante": -3,
         "costoUnitario": 199,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -748,7 +848,7 @@
     "d3qr73i6": [
       {
         "id": "xwcpakz8",
-        "cantidadRestante": -170,
+        "cantidadRestante": -240,
         "costoUnitario": 1,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -758,7 +858,7 @@
     "6nkpn15c": [
       {
         "id": "rr0j0qq3",
-        "cantidadRestante": -70,
+        "cantidadRestante": -110,
         "costoUnitario": 5.98,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -778,7 +878,7 @@
     "cf18af3r": [
       {
         "id": "mvzd6s0v",
-        "cantidadRestante": -200,
+        "cantidadRestante": -300,
         "costoUnitario": 2.8,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -798,7 +898,7 @@
     "axwel3ok": [
       {
         "id": "tiu8xuf6",
-        "cantidadRestante": -540,
+        "cantidadRestante": -1080,
         "costoUnitario": 3.6666666666666665,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -808,7 +908,7 @@
     "hjcwbwsr": [
       {
         "id": "l7ugooge",
-        "cantidadRestante": -60,
+        "cantidadRestante": -120,
         "costoUnitario": 2,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -818,7 +918,7 @@
     "ghuzm2sl": [
       {
         "id": "1tt95fg9",
-        "cantidadRestante": -30,
+        "cantidadRestante": -60,
         "costoUnitario": 1.5555555555555556,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -828,7 +928,7 @@
     "pwwviz7f": [
       {
         "id": "pmyoo4dz",
-        "cantidadRestante": -200,
+        "cantidadRestante": -400,
         "costoUnitario": 4.5,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -856,6 +956,11 @@
       "confirmado": true,
       "monto": 31000,
       "fechaConfirmacion": "31-07-2026, 12:31:31 a. m."
+    },
+    "2026-07-29": {
+      "confirmado": true,
+      "monto": 0,
+      "fechaConfirmacion": "31-07-2026, 12:33:27 a. m."
     }
   }
 }
