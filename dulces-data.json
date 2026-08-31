@@ -3372,6 +3372,53 @@
         },
         "costoIngredientes": 6120.046666666666
       }
+    },
+    "2026-08-30": {
+      "00dn8rjf": {
+        "fabricado": 220,
+        "vendido": 198,
+        "cortesia": 22,
+        "completado": false,
+        "consumoDetalle": {
+          "nfqecha8": {
+            "cantidad": 1059.2592592592594,
+            "costo": 761.6074074074074
+          },
+          "929onaah": {
+            "cantidad": 5060,
+            "costo": 3036
+          },
+          "wt3ezpv6": {
+            "cantidad": 48.888888888888886,
+            "costo": 243.46666666666667
+          },
+          "4p2py1ge": {
+            "cantidad": 4.0740740740740735,
+            "costo": 810.7407407407406
+          },
+          "d3qr73i6": {
+            "cantidad": 179.25925925925924,
+            "costo": 179.25925925925924
+          },
+          "6nkpn15c": {
+            "cantidad": 77.4074074074074,
+            "costo": 462.8962962962963
+          },
+          "95oz6cyi": {
+            "cantidad": 8.148148148148147,
+            "costo": 24.444444444444443
+          },
+          "cf18af3r": {
+            "cantidad": 505.18518518518516,
+            "costo": 1111.4074074074074
+          },
+          "dsr822lr": {
+            "cantidad": 1222.2222222222222,
+            "costo": 5500
+          }
+        },
+        "costoIngredientes": 12129.822222222221
+      }
     }
   },
   "bloqueos": {
@@ -3397,7 +3444,7 @@
     "nfqecha8": [
       {
         "id": "4mypz6hy",
-        "cantidadRestante": -10843.531481481483,
+        "cantidadRestante": -11902.790740740742,
         "costoUnitario": 0.855,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3407,7 +3454,7 @@
     "929onaah": [
       {
         "id": "wt7lisep",
-        "cantidadRestante": -50795.41666666667,
+        "cantidadRestante": -55855.41666666667,
         "costoUnitario": 0.7996,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3417,7 +3464,7 @@
     "wt3ezpv6": [
       {
         "id": "vfzhdz48",
-        "cantidadRestante": -1446.8444444444442,
+        "cantidadRestante": -1495.7333333333331,
         "costoUnitario": 4.98,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3427,7 +3474,7 @@
     "4p2py1ge": [
       {
         "id": "ebp15x3i",
-        "cantidadRestante": -46.92129629629632,
+        "cantidadRestante": -50.995370370370395,
         "costoUnitario": 199,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3437,7 +3484,7 @@
     "d3qr73i6": [
       {
         "id": "xwcpakz8",
-        "cantidadRestante": -3423.8148148148143,
+        "cantidadRestante": -3603.0740740740735,
         "costoUnitario": 1,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3447,7 +3494,7 @@
     "6nkpn15c": [
       {
         "id": "rr0j0qq3",
-        "cantidadRestante": -1360.7740740740735,
+        "cantidadRestante": -1438.181481481481,
         "costoUnitario": 5.98,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3457,7 +3504,7 @@
     "95oz6cyi": [
       {
         "id": "zmhk1bwm",
-        "cantidadRestante": -212.52703703703702,
+        "cantidadRestante": -220.67518518518517,
         "costoUnitario": 3,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3467,7 +3514,7 @@
     "cf18af3r": [
       {
         "id": "mvzd6s0v",
-        "cantidadRestante": -5011.157407407408,
+        "cantidadRestante": -5516.342592592593,
         "costoUnitario": 2.8,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3477,7 +3524,7 @@
     "dsr822lr": [
       {
         "id": "pdhlexzv",
-        "cantidadRestante": -9098.888888888887,
+        "cantidadRestante": -10321.11111111111,
         "costoUnitario": 5.416666666666667,
         "fecha": "2026-07-31",
         "nota": "Déficit (consumo mayor al stock disponible)",
@@ -3685,6 +3732,11 @@
       "confirmado": true,
       "monto": 33000,
       "fechaConfirmacion": "30-08-2026, 2:21:32 a. m."
+    },
+    "2026-08-30": {
+      "confirmado": true,
+      "monto": 66000,
+      "fechaConfirmacion": "30-08-2026, 7:49:43 p. m."
     }
   }
 }
